@@ -107,19 +107,18 @@ Category assignment: transparency rules engine sets `cmsReportCategory` → inge
 
 ---
 
-## Dual database strategy
+## Database (PostgreSQL)
 
-### SQLite (development / demo)
+### Production & local development
 
-- Prisma schema at `cms-compliance-nextjs/prisma/schema.prisma`
-- Single-file `prisma/dev.db`
-- All lineage tables live here today
+- Prisma schema: `cms-compliance-nextjs/prisma/schema.prisma` (**PostgreSQL**)
+- Local Docker: `docker compose up postgres -d` → `localhost:5433`
+- Bootstrap schemas: `database/init.sql` (`data_nexus`, service schemas)
+- Migrations: `npx prisma migrate deploy` + `npx prisma db seed`
 
-### PostgreSQL (production target)
+### Legacy note
 
-- Bootstrap: `database/init.sql`
-- Existing `data_nexus.data_sources` and `data_nexus.data_records` mirror Tier 2 landing
-- Migration path: replicate Prisma models into PostgreSQL schemas (`compliance`, `lineage`) and wire `data_nexus.data_records.normalized_data` → `spend_events`
+SQLite (`prisma/dev.db`) was used in early demos; Sprint B cut over to PostgreSQL with baseline migration `20250603120000_postgres_baseline`.
 
 ```mermaid
 flowchart LR

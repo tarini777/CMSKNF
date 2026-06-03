@@ -6,8 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // CMS Compliance Data Models
@@ -106,6 +106,12 @@ model CMSRecord {
   disputeOpenedAt DateTime?
   disputeResolvedAt DateTime?
   disputeNotes String?
+
+  // NPPES verification (Sprint B — ingest-time identity gate)
+  nppesVerificationStatus String? // verified | name_mismatch | not_found | invalid_format | skipped
+  nppesVerifiedAt DateTime?
+  nppesVerificationSource String?
+  nppesVerificationMessage String?
   
   // Audit fields
   createdAt DateTime @default(now())
@@ -188,6 +194,22 @@ model FmvSpecialtyTier {
   updatedAt    DateTime @updatedAt
 
   @@map("fmv_specialty_tiers")
+}
+
+/** Background / scheduled job execution log (aggregate recalc, FMV sync, etc.). */
+model JobRun {
+  id            String    @id @default(cuid())
+  jobKey        String
+  programYear   String?
+  status        String    @default("running")
+  triggeredBy   String?
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+  resultSummary Json?
+  errorMessage  String?
+
+  @@index([jobKey, startedAt])
+  @@map("job_runs")
 }
 
 model ReviewSession {

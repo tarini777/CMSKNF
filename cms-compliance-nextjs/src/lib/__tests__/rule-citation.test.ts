@@ -6,6 +6,25 @@ import {
 import { runTransparencyAnalysis } from '@/lib/transparency-rules-engine'
 import { CMSRecord } from '@/types/cms'
 
+jest.mock('@/lib/jurisdiction-config-service', () => ({
+  getJurisdictionThresholds: jest.fn(async (code: string) => ({
+    jurisdictionCode: code,
+    jurisdictionName: code === 'FR' ? 'France' : 'United States',
+    perPaymentMin: code === 'FR' ? 10 : 10,
+    aggregateAnnualMin: code === 'FR' ? 0 : 100,
+    currency: code === 'FR' ? 'EUR' : 'USD',
+    fmvTolerancePercent: 10,
+  })),
+  getUsJurisdictionThresholds: jest.fn(async () => ({
+    jurisdictionCode: 'US',
+    jurisdictionName: 'United States',
+    perPaymentMin: 10,
+    aggregateAnnualMin: 100,
+    currency: 'USD',
+    fmvTolerancePercent: 10,
+  })),
+}))
+
 const baseRecord: CMSRecord = {
   id: '1',
   recordId: 'R1',

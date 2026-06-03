@@ -1,5 +1,7 @@
 import { CONCUR_CONNECTOR, enrichConcurCanonical } from './concur'
+import { CTMS_CONNECTOR, enrichCtmsCanonical } from './ctms'
 import { CVENT_CONNECTOR, enrichCventCanonical } from './cvent'
+import { GREENPHIRE_CONNECTOR, enrichGreenphireCanonical } from './greenphire'
 import type {
   ConnectorDefinition,
   ConnectorMapResult,
@@ -18,6 +20,8 @@ export const CONNECTOR_REGISTRY: Record<SupportedConnectorKey, ConnectorDefiniti
   veeva_crm: VEEVA_CRM_CONNECTOR,
   vendor_med_ed: VENDOR_MED_ED_CONNECTOR,
   tmc: TMC_CONNECTOR,
+  ctms: CTMS_CONNECTOR,
+  greenphire: GREENPHIRE_CONNECTOR,
 }
 
 export const SUPPORTED_CONNECTOR_KEYS = Object.keys(CONNECTOR_REGISTRY) as SupportedConnectorKey[]
@@ -67,6 +71,8 @@ export function mapConnectorPayload(
   if (sourceKey === 'concur') enriched = enrichConcurCanonical(enriched)
   if (sourceKey === 'cvent') enriched = enrichCventCanonical(enriched)
   if (sourceKey === 'veeva_crm') enriched = enrichVeevaCanonical(enriched)
+  if (sourceKey === 'ctms') enriched = enrichCtmsCanonical(enriched)
+  if (sourceKey === 'greenphire') enriched = enrichGreenphireCanonical(enriched)
   if (sourceKey === 'vendor_med_ed' || sourceKey === 'tmc') {
     enriched = enrichVendorCanonical(enriched, sourceKey)
   }

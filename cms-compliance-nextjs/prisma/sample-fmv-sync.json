@@ -1,0 +1,17 @@
+{
+  "effectiveDate": "2025-01-01",
+  "sourceKey": "fmv_engine",
+  "deactivatePrior": true,
+  "specialtyTiers": [
+    { "tierKey": "default", "multiplier": 1, "displayLabel": "Default" },
+    { "tierKey": "cardiology", "multiplier": 1.25, "displayLabel": "Cardiology" },
+    { "tierKey": "oncology", "multiplier": 1.3, "displayLabel": "Oncology" }
+  ],
+  "rates": [
+    { "natureKey": "consulting", "natureLabel": "Consulting fee", "rateUsd": 500, "unit": "hour" },
+    { "natureKey": "speaking", "natureLabel": "Speaker / faculty", "rateUsd": 2000, "unit": "event" },
+    { "natureKey": "food and beverage", "natureLabel": "Meals", "rateUsd": 75, "unit": "meal" },
+    { "natureKey": "travel and lodging", "natureLabel": "Travel & lodging", "rateUsd": 800, "unit": "day" },
+    { "natureKey": "grant", "natureLabel": "Grant", "rateUsd": 0, "unit": "event" }
+  ]
+}

@@ -10,7 +10,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
-      - "5432:5432"
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U cms_user -d cms_compliance"]
       interval: 30s
@@ -345,12 +345,13 @@ services:
     ports:
       - "3001:3000"
     environment:
-      - DATABASE_URL=file:/app/prisma/dev.db
+      - DATABASE_URL=postgresql://cms_user:cms_password@postgres:5432/cms_compliance
+      - DEMO_MODE=true
+      - NPPES_INGEST_POLICY=warn
+      - CRON_SECRET=docker-cron-secret-change-me
       - AUTH_ENABLED=true
       - JWT_SECRET=docker-jwt-secret-change-me
       - NODE_ENV=production
-    volumes:
-      - nextjs_data:/app/prisma
     depends_on:
       postgres:
         condition: service_healthy
@@ -360,7 +361,6 @@ volumes:
   redis_data:
   prometheus_data:
   grafana_data:
-  nextjs_data:
 
 networks:
   default:

@@ -12,7 +12,9 @@ Run after `npm run dev` and `npx prisma db seed` (or fresh DB).
 ```bash
 cd cms-compliance-nextjs
 npm install
-npx prisma migrate dev
+docker compose up postgres -d   # or use existing PostgreSQL
+cp .env.example .env.local      # set DATABASE_URL
+npx prisma migrate deploy
 npx prisma db seed
 npm run dev
 ```

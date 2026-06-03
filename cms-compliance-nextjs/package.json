@@ -19,6 +19,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "prisma migrate reset",
     "db:studio": "prisma studio",
+    "job:aggregate": "tsx scripts/run-aggregate-job.ts",
+    "job:fmv-sync": "tsx scripts/sync-fmv-rates.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky install",

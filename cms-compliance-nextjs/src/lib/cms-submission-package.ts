@@ -7,6 +7,7 @@ import {
 } from '@/lib/lineage/puf-export-service'
 import { getCmsExportStats } from '@/lib/cms-export-service'
 import { getActiveProgramYear } from '@/lib/submission-calendar'
+import { assertExportReady } from '@/lib/export-guard-service'
 
 export interface CmsSubmissionFile {
   filename: string
@@ -42,6 +43,7 @@ function countCsvRows(csv: string): number {
 
 export async function buildCmsSubmissionPackage(programYear?: string): Promise<CmsSubmissionPackage> {
   const year = programYear || String(getActiveProgramYear())
+  await assertExportReady(year)
   const next = parseInt(year, 10) + 1
 
   const [generalCsv, researchCsv, ownershipCsv, stats, pufStats] = await Promise.all([

@@ -2,23 +2,37 @@
 
 Implementation: `cms-compliance-nextjs/src/lib/lineage/connectors/`
 
-## Supported connectors (Option 2)
+Runtime: **PostgreSQL** (`DATABASE_URL`, default host port **5433** via root `docker-compose.yml`).
+
+## Supported connectors
 
 | `source_key` | System | Category | Mapper version |
 |--------------|--------|----------|----------------|
 | `concur` | SAP Concur T&E | travel | `concur-mapper-1.0` |
+| `cvent` | Cvent events | engagement | `cvent-mapper-1.0` |
 | `veeva_crm` | Veeva CRM | crm | `veeva-crm-mapper-1.0` |
 | `vendor_med_ed` | Third-party med-ed vendor | vendor | `vendor-med-ed-mapper-1.0` |
 | `tmc` | Travel Management Company | vendor | `tmc-mapper-1.0` |
+| `ctms` | Clinical trial management | clinical | `ctms-mapper-1.0` |
+| `greenphire` | Greenphire clinical payments | clinical | `greenphire-mapper-1.0` |
+
+## Reference / config sync (not spend ingest)
+
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /api/connectors/fmv/sync` | Sync CLM / `fmv_engine` rates → `fmv_rates` table |
+| `GET /api/connectors/fmv/sync` | List active FMV rates |
 
 ## Pipeline
 
 ```
 Upstream JSON/XML/CSV row
   → mapConnectorPayload()     # field mapping + nature enrichment
+  → NPPES verification        # ingest-time (NPPES_INGEST_POLICY)
   → SourceTransaction         # rawPayload + payloadHash (dedupe)
   → transparency rules
   → SpendEvent + PUF line + CMSRecord
+  → aggregate job (jurisdiction_rules)
 ```
 
 ## API
@@ -27,53 +41,24 @@ Upstream JSON/XML/CSV row
 |--------|----------|--------|------|
 | GET | `/api/lineage/connectors` | `list` | — |
 | GET | `/api/lineage/connectors?action=mapping&sourceKey=concur` | field map + sample | — |
-| GET | `/api/lineage/connectors?action=preview&sourceKey=concur` | sample canonical row | — |
-| POST | `/api/lineage/connectors` | `preview` | `{ sourceKey, payload }` |
-| POST | `/api/lineage/connectors` | `ingest` | `{ sourceKey, payload, reviewSessionId? }` |
+| POST | `/api/lineage/connectors` | `ingest` | `{ sourceKey, payload }` |
 | POST | `/api/lineage/connectors` | `ingest-batch` | `{ sourceKey, payloads: [] }` |
-
-### Example: ingest Concur expense
-
-```bash
-curl -s -X POST http://localhost:3000/api/lineage/connectors \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "action": "ingest",
-    "sourceKey": "concur",
-    "payload": {
-      "ReportId": "RPT-2024-88421",
-      "ExpenseId": "EXP-99182",
-      "TransactionDate": "2024-03-15",
-      "PostedAmount": "125.50",
-      "ExpenseType": "Business Meal",
-      "AttendeeFirstName": "Jane",
-      "AttendeeLastName": "Doe",
-      "AttendeeNPI": "1234567890",
-      "CompanyCode": "Gilead Sciences, Inc."
-    }
-  }' | jq .
-```
+| GET | `/api/transparency/puf-validation` | Jan 2025 PUF validation report | — |
+| GET | `/api/transparency/export/international?jurisdiction=fr\|uk` | FR / UK disclosure CSV | — |
+| GET | `/api/transparency/attestation/pack` | Attestation PDF pack | — |
+| POST | `/api/jobs/aggregate` | Scheduled aggregate recalc | `{ programYear }` |
 
 ## UI
 
-Dashboard → **Lineage** tab → **Source Connectors** panel
-
-- View field mappings per connector
-- Preview sample canonical row
-- One-click sample ingest into lineage
+Dashboard → **Lineage** tab → **Source Connectors** panel  
+Dashboard → **Submit** tab → OPS bundle, FR/UK exports, attestation PDF
 
 ## Third-party / indirect spend
 
-`vendor_med_ed` and `tmc` connectors set:
+`vendor_med_ed` and `tmc` connectors set third-party PUF indicators for CMS indirect attribution.
 
-- `third_party_payment_recipient_indicator = Y`
-- `name_of_third_party_entity_receiving_payment_or_transfer_of_value` = vendor/TMC name
+## Research payments
 
-This closes the indirect attribution gap described in [SOURCE_SYSTEMS.md](./SOURCE_SYSTEMS.md).
+`ctms` and `greenphire` map protocol, NCT, PI identity, and study metadata into `cms_research_payment_lines.puf_fields`. Rules engine assigns `cmsReportCategory: research` when nature includes research/grant/clinical study.
 
-## Next: Option 3 & Dedup UI
-
-- **Option 3:** Expand `CMSRecord` or migrate Records UI to PUF lines
-- **Dedup UI:** Cross-source `dedupClusterId` when Concur + Cvent describe same event
-
-See [ARCHITECTURE.md](./ARCHITECTURE.md).
+See [CMS_PUF_MAPPING.md](./CMS_PUF_MAPPING.md) and [ARCHITECTURE.md](./ARCHITECTURE.md).

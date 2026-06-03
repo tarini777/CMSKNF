@@ -11,11 +11,8 @@
 -- Application runtime schema (SQLite/Prisma): cms-compliance-nextjs/prisma/schema.prisma
 -- CMS reference: docs/open_payments_data_dictionary_methodology-january_2025.pdf
 
--- Create database if it doesn't exist
-CREATE DATABASE cms_compliance;
-
--- Use the database
-\c cms_compliance;
+-- Database cms_compliance is created by POSTGRES_DB in docker-compose.
+-- When running this script manually: create the database first, then \c cms_compliance
 
 -- Create extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";

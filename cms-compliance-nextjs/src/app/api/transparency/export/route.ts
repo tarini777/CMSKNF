@@ -7,6 +7,7 @@ import {
   generateFullResearchPufCsv,
 } from '@/lib/lineage/puf-export-service'
 import { getActiveProgramYear } from '@/lib/submission-calendar'
+import { assertExportReady, ExportBlockedError } from '@/lib/export-guard-service'
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,6 +15,21 @@ export async function GET(request: NextRequest) {
     const programYear = searchParams.get('programYear') || String(getActiveProgramYear())
     const type = searchParams.get('type') || 'general'
     const bundle = searchParams.get('bundle') === '1'
+    const skipGuard = searchParams.get('skipGuard') === '1'
+
+    if (!skipGuard) {
+      try {
+        await assertExportReady(programYear)
+      } catch (error) {
+        if (error instanceof ExportBlockedError) {
+          return NextResponse.json(
+            { success: false, error: error.message, data: error.guard },
+            { status: 422 }
+          )
+        }
+        throw error
+      }
+    }
 
     if (bundle) {
       const pkg = await buildCmsSubmissionPackage(programYear)

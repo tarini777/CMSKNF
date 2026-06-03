@@ -243,6 +243,20 @@ export const CMS_GENERAL_PUF_HEADERS: (keyof CmsGeneralPufFields)[] = [
   'payment_publication_date',
 ]
 
+/** Core research PUF fields required per Jan 2025 Appendix D (subset for validation). */
+export const CMS_RESEARCH_PUF_REQUIRED_FIELDS: (keyof CmsResearchPufFields)[] = [
+  'record_id',
+  'program_year',
+  'total_amount_of_payment_usdollars',
+  'name_of_study',
+  'clinicaltrials_gov_identifier',
+  'covered_recipient_npi',
+  'covered_recipient_first_name',
+  'covered_recipient_last_name',
+  'applicable_manufacturer_or_applicable_gpo_making_payment_name',
+  'nature_of_payment_or_transfer_of_value',
+]
+
 export const CMS_OWNERSHIP_PUF_HEADERS: (keyof CmsOwnershipPufFields)[] = [
   'change_type',
   'physician_profile_id',

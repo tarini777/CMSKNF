@@ -12,6 +12,7 @@ import type { ConnectorIngestResult, ConnectorMapResult } from '@/lib/lineage/co
 import { ingestSourceRow } from '@/lib/lineage/ingest-pipeline'
 import { normalizeRawRow } from '@/lib/lineage/puf-field-mapper'
 import { extractCmsRecordFieldsFromCanonical } from '@/lib/lineage/record-view-service'
+import { persistNppesVerification, verifyRecordNpiAtIngest } from '@/lib/nppes-ingest-service'
 
 export function buildDraftRecordFromCanonicalRow(
   canonicalRow: Record<string, string>,
@@ -157,6 +158,15 @@ export async function ingestConnectorPayload(
       },
     })
     cmsRecordId = record.id
+
+    const nppesResult = await verifyRecordNpiAtIngest({
+      coveredRecipientNpi: record.coveredRecipientNpi,
+      coveredRecipientType: record.coveredRecipientType,
+      physicianFirstName: record.physicianFirstName,
+      physicianLastName: record.physicianLastName,
+      coveredRecipientName: record.coveredRecipientName,
+    })
+    await persistNppesVerification(record.id, nppesResult)
   }
 
   const ingestResult = await ingestSourceRow({

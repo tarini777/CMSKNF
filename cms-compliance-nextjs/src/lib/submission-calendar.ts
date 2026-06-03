@@ -348,6 +348,9 @@ export function buildAttestationChecklist(stats: {
   disputedRecords: number
   unresolvedDisputes: number
   exportGenerated: boolean
+  nppesVerified?: boolean
+  aggregatesCurrent?: boolean
+  pufValidated?: boolean
 }): AttestationChecklistItem[] {
   return [
     {
@@ -370,6 +373,27 @@ export function buildAttestationChecklist(stats: {
       required: true,
       completed: stats.unresolvedDisputes === 0,
       description: 'No open disputes after May 15 / May 30 correction windows',
+    },
+    {
+      id: 'nppes_verified',
+      label: 'NPI identity verified (NPPES)',
+      required: true,
+      completed: stats.nppesVerified !== false,
+      description: 'All reportable physician NPIs verified at ingest; export blocked when NPPES_INGEST_POLICY=block',
+    },
+    {
+      id: 'aggregates_current',
+      label: 'Annual aggregate thresholds recalculated',
+      required: true,
+      completed: stats.aggregatesCurrent !== false,
+      description: 'Sub-threshold payments rolled up per jurisdiction_rules before OPS export',
+    },
+    {
+      id: 'puf_validated',
+      label: 'PUF files validated against Jan 2025 data dictionary',
+      required: true,
+      completed: stats.pufValidated !== false,
+      description: 'General (91-col), research, and ownership exports pass column and required-field validation',
     },
     {
       id: 'cms_export',

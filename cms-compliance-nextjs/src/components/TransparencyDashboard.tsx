@@ -86,7 +86,11 @@ export default function TransparencyDashboard() {
   const loadBundle = async () => {
     const res = await fetch(`/api/transparency/export?programYear=${programYear}&bundle=1`)
     const data = await res.json()
-    if (data.success) setBundleInfo(data.data)
+    if (data.success) {
+      setBundleInfo(data.data)
+    } else {
+      setAggregateMsg(data.error || 'Export blocked — check checklist')
+    }
   }
 
   const downloadPuf = (file: 'general' | 'research' | 'ownership') => {
@@ -211,6 +215,41 @@ export default function TransparencyDashboard() {
               ))}
             </div>
           )}
+          <div className="flex flex-wrap gap-2 pt-2 border-t">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                window.open(
+                  `/api/transparency/export/international?programYear=${programYear}&jurisdiction=fr`,
+                  '_blank'
+                )
+              }
+            >
+              France (Transparence)
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                window.open(
+                  `/api/transparency/export/international?programYear=${programYear}&jurisdiction=uk`,
+                  '_blank'
+                )
+              }
+            >
+              UK (Disclosure)
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                window.open(`/api/transparency/attestation/pack?programYear=${programYear}`, '_blank')
+              }
+            >
+              Attestation PDF
+            </Button>
+          </div>
           <a href="/disclosure" target="_blank" className="text-xs text-primary underline block">
             Open public disclosure site →
           </a>

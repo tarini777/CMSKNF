@@ -92,8 +92,11 @@ flowchart LR
 | `source_key` | Connector status | Ingest method |
 |--------------|------------------|---------------|
 | `csv_upload` | **Live** | `POST /api/upload` → `ingestSourceRow()` |
-| All others | **Registered** | Await connector; accept manual CSV with source tag via future API |
-| `nppes`, `veeva_open_data` | **Reference** | Enrich `HcpMaster.match_status`, not spend |
+| `concur`, `cvent`, `veeva_crm`, `vendor_med_ed`, `tmc` | **Live** | `POST /api/lineage/connectors` |
+| `ctms`, `greenphire` | **Live** | Research PUF ingest via connector API |
+| `fmv_engine` | **Live (sync)** | `POST /api/connectors/fmv/sync` → `fmv_rates` table |
+| `clm` | **Registered** | Await connector; rates via FMV sync |
+| `nppes`, `veeva_open_data` | **Reference + ingest gate** | NPPES verify at ingest; MDM enrich |
 
 ---
 
@@ -128,9 +131,9 @@ data_nexus.data_records (
 |----------|--------|-----------|
 | **P0** | `concur` | Richest general-payment feed; dedup with events |
 | **P0** | `vendor_med_ed`, `tmc` | Closes third-party / indirect gap |
-| **P0** | `nppes` + `veeva_open_data` | CMS match validation |
+| **P0** | `nppes` + `veeva_open_data` | CMS match validation (NPPES on ingest) |
+| **P1** | `ctms`, `greenphire` | Research PUF completeness (**implemented**) |
 | **P1** | `veeva_crm`, `cvent` | High dispute categories (meals, speaker programs) |
-| **P1** | `ctms`, `greenphire` | Research PUF completeness |
 | **P2** | `sap_ap` | Treasury / honoraria only where paid direct to HCP |
 | **P2** | `sample_mgmt` | Exemption pipeline, not omission |
 

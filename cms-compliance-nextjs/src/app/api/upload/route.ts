@@ -6,9 +6,10 @@ import { glossaryService } from '@/lib/glossary-service'
 import { analyzeRecordWithCompanyRules } from '@/lib/company-rules-engine'
 import { createAuditLog } from '@/lib/audit-log'
 import { getPerformedBy } from '@/lib/request-user'
-import { recalculateAggregatesForSession } from '@/lib/aggregate-threshold-service'
+import { runAggregateRecalculationJob } from '@/lib/aggregate-job-service'
 import { ingestSourceRow } from '@/lib/lineage/ingest-pipeline'
 import { extractCmsRecordFieldsFromCanonical } from '@/lib/lineage/record-view-service'
+import { persistNppesVerification, verifyRecordNpiAtIngest } from '@/lib/nppes-ingest-service'
 import type { TransparencyAnalysis } from '@/lib/transparency-rules-engine'
 
 function csvField(recordData: Record<string, string>, ...keys: string[]): string {
@@ -225,6 +226,15 @@ export async function POST(request: NextRequest) {
           },
         })
 
+        const nppesResult = await verifyRecordNpiAtIngest({
+          coveredRecipientNpi: record.coveredRecipientNpi,
+          coveredRecipientType: record.coveredRecipientType,
+          physicianFirstName: record.physicianFirstName,
+          physicianLastName: record.physicianLastName,
+          coveredRecipientName: record.coveredRecipientName,
+        })
+        await persistNppesVerification(record.id, nppesResult)
+
         await ingestSourceRow({
           sourceKey: 'csv_upload',
           rawRow: recordData,
@@ -260,8 +270,12 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Annual aggregate recalculation (US $100 threshold for sub-$10 payments)
-    await recalculateAggregatesForSession(reviewSession.id)
+    // Annual aggregate recalculation (jurisdiction_rules-driven)
+    await runAggregateRecalculationJob({
+      reviewSessionId: reviewSession.id,
+      programYear: String(new Date().getFullYear()),
+      triggeredBy: 'upload',
+    })
 
     // Refresh counts after aggregate pass
     const finalRecords = await prisma.cMSRecord.findMany({ where: { reviewSessionId: reviewSession.id } })
