@@ -38,6 +38,8 @@ describe('evaluateCompanyRule', () => {
       priority: 1,
       createdAt: new Date(),
       updatedAt: new Date(),
+      createdBy: null,
+      updatedBy: null,
     }
     const { matched, effect } = evaluateCompanyRule(rule, baseRecord)
     expect(matched).toBe(true)
@@ -55,6 +57,8 @@ describe('evaluateCompanyRule', () => {
       priority: 1,
       createdAt: new Date(),
       updatedAt: new Date(),
+      createdBy: null,
+      updatedBy: null,
     }
     const { matched } = evaluateCompanyRule(rule, { ...baseRecord, totalAmountOfPaymentUsdollars: 5 })
     expect(matched).toBe(true)

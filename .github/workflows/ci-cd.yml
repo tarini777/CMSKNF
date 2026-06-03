@@ -56,3 +56,13 @@ jobs:
 
       - name: Production build
         run: npm run build
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: E2E smoke tests
+        run: npm run test:e2e
+        env:
+          CI: 'true'
+          DEMO_MODE: 'true'
+          AUTH_ENABLED: 'false'

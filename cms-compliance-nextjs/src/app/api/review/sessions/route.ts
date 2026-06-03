@@ -11,11 +11,7 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * perPage
 
-    // Build where clause
-    let whereClause: any = {}
-    if (status) {
-      whereClause.status = status
-    }
+    const whereClause = status ? { status } : {}
 
     const [sessions, total] = await Promise.all([
       prisma.reviewSession.findMany({

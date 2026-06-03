@@ -1,13 +1,15 @@
 import { CONCUR_CONNECTOR, enrichConcurCanonical } from './concur'
+import { CLM_CONNECTOR, enrichClmCanonical } from './clm'
 import { CTMS_CONNECTOR, enrichCtmsCanonical } from './ctms'
 import { CVENT_CONNECTOR, enrichCventCanonical } from './cvent'
 import { GREENPHIRE_CONNECTOR, enrichGreenphireCanonical } from './greenphire'
+import { SAP_AP_CONNECTOR, enrichSapApCanonical } from './sap-ap'
+import { enrichVeevaCanonical, VEEVA_CRM_CONNECTOR } from './veeva-crm'
 import type {
   ConnectorDefinition,
   ConnectorMapResult,
   SupportedConnectorKey,
 } from './types'
-import { enrichVeevaCanonical, VEEVA_CRM_CONNECTOR } from './veeva-crm'
 import {
   enrichVendorCanonical,
   TMC_CONNECTOR,
@@ -22,6 +24,8 @@ export const CONNECTOR_REGISTRY: Record<SupportedConnectorKey, ConnectorDefiniti
   tmc: TMC_CONNECTOR,
   ctms: CTMS_CONNECTOR,
   greenphire: GREENPHIRE_CONNECTOR,
+  sap_ap: SAP_AP_CONNECTOR,
+  clm: CLM_CONNECTOR,
 }
 
 export const SUPPORTED_CONNECTOR_KEYS = Object.keys(CONNECTOR_REGISTRY) as SupportedConnectorKey[]
@@ -73,6 +77,8 @@ export function mapConnectorPayload(
   if (sourceKey === 'veeva_crm') enriched = enrichVeevaCanonical(enriched)
   if (sourceKey === 'ctms') enriched = enrichCtmsCanonical(enriched)
   if (sourceKey === 'greenphire') enriched = enrichGreenphireCanonical(enriched)
+  if (sourceKey === 'sap_ap') enriched = enrichSapApCanonical(enriched)
+  if (sourceKey === 'clm') enriched = enrichClmCanonical(enriched)
   if (sourceKey === 'vendor_med_ed' || sourceKey === 'tmc') {
     enriched = enrichVendorCanonical(enriched, sourceKey)
   }
@@ -84,6 +90,7 @@ export function mapConnectorPayload(
     pickUpstream(upstreamPayload, 'RegistrationId') ||
     pickUpstream(upstreamPayload, 'Call_ID') ||
     pickUpstream(upstreamPayload, 'InvoiceNumber') ||
+    pickUpstream(upstreamPayload, 'ContractId') ||
     `${sourceKey}_${Date.now()}`
 
   return {
@@ -108,3 +115,5 @@ export function getConnectorDefinition(sourceKey: string): ConnectorDefinition |
 export function isSupportedConnector(sourceKey: string): sourceKey is SupportedConnectorKey {
   return SUPPORTED_CONNECTOR_KEYS.includes(sourceKey as SupportedConnectorKey)
 }
+
+export type { SupportedConnectorKey } from './types'

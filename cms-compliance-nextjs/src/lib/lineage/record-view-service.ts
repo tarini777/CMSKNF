@@ -10,8 +10,8 @@ export interface RecordPufSummary {
   totalFields: number
   recordId: string
   changeType?: string
-  coveredRecipientNpi?: string
-  teachingHospitalCcn?: string
+  coveredRecipientNpi?: string | null
+  teachingHospitalCcn?: string | null
   hasLineage: boolean
   spendEventId?: string
   sourceSystem?: string
@@ -22,7 +22,6 @@ export interface RecordPufSummary {
 import type { RecordRuleCitations } from '@/lib/rule-citation-service'
 
 export interface RecordWithPuf extends CMSRecord {
-  spendEventId?: string | null
   pufSummary?: RecordPufSummary
   pufFields?: CmsGeneralPufFields | Record<string, unknown>
   lineage?: {

@@ -15,8 +15,10 @@ export interface SessionUser {
   role: UserRole
 }
 
+import { isAuthEnabledForEnvironment } from '@/lib/app-config'
+
 export function isAuthEnabled(): boolean {
-  return process.env.AUTH_ENABLED === 'true'
+  return isAuthEnabledForEnvironment()
 }
 
 export async function hashPassword(password: string): Promise<string> {

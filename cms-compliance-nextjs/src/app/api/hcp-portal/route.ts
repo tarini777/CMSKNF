@@ -3,9 +3,13 @@ import { prisma } from '@/lib/prisma'
 import { getActiveProgramYear } from '@/lib/submission-calendar'
 import { canTransitionDispute, DisputeStatus } from '@/lib/submission-calendar'
 import { createAuditLog } from '@/lib/audit-log'
+import { applyPublicRateLimit } from '@/lib/public-api-rate-limit'
 
 /** HCP-facing 45-day review portal (REQ-018). */
 export async function GET(request: NextRequest) {
+  const rate = applyPublicRateLimit(request, 'hcp_portal')
+  if (rate.blocked) return rate.blocked
+
   try {
     const { searchParams } = new URL(request.url)
     const npi = (searchParams.get('npi') || '').replace(/\D/g, '')
@@ -34,25 +38,28 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'No reportable payments found for this NPI' }, { status: 404 })
     }
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        programYear,
-        recipientName: filtered[0].coveredRecipientName,
-        npi,
-        payments: filtered.map((r) => ({
-          id: r.id,
-          recordId: r.recordId,
-          amountUsd: r.totalAmountOfPaymentUsdollars,
-          dateOfPayment: r.dateOfPayment,
-          natureOfPayment: r.natureOfPaymentOrTransferOfValue,
-          formOfPayment: r.formOfPaymentOrTransferOfValue,
-          manufacturer: r.applicableManufacturerOrApplicableGpoMakingPaymentName,
-          disputeWorkflowStatus: r.disputeWorkflowStatus,
-          disputeNotes: r.disputeNotes,
-        })),
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          programYear,
+          recipientName: filtered[0].coveredRecipientName,
+          npi,
+          payments: filtered.map((r) => ({
+            id: r.id,
+            recordId: r.recordId,
+            amountUsd: r.totalAmountOfPaymentUsdollars,
+            dateOfPayment: r.dateOfPayment,
+            natureOfPayment: r.natureOfPaymentOrTransferOfValue,
+            formOfPayment: r.formOfPaymentOrTransferOfValue,
+            manufacturer: r.applicableManufacturerOrApplicableGpoMakingPaymentName,
+            disputeWorkflowStatus: r.disputeWorkflowStatus,
+            disputeNotes: r.disputeNotes,
+          })),
+        },
       },
-    })
+      { headers: rate.headers }
+    )
   } catch (error) {
     console.error('HCP portal error:', error)
     return NextResponse.json({ success: false, error: 'Portal lookup failed' }, { status: 500 })
@@ -60,6 +67,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const rate = applyPublicRateLimit(request, 'hcp_portal')
+  if (rate.blocked) return rate.blocked
+
   try {
     const body = await request.json()
     const { recordId, reason } = body
@@ -112,7 +122,10 @@ export async function POST(request: NextRequest) {
       performedBy: 'hcp_portal',
     })
 
-    return NextResponse.json({ success: true, data: updated, message: 'Dispute submitted — compliance team will review' })
+    return NextResponse.json(
+      { success: true, data: updated, message: 'Dispute submitted — compliance team will review' },
+      { headers: rate.headers }
+    )
   } catch (error) {
     console.error('HCP dispute error:', error)
     return NextResponse.json({ success: false, error: 'Failed to submit dispute' }, { status: 500 })

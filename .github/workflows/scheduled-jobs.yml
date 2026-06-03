@@ -1,0 +1,44 @@
+name: Scheduled CMS Jobs
+
+on:
+  schedule:
+    # Daily 06:00 UTC — aggregate recalc + FMV sync for pilot/production
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      programYear:
+        description: Program year override (optional)
+        required: false
+        type: string
+
+defaults:
+  run:
+    working-directory: cms-compliance-nextjs
+
+jobs:
+  aggregate-and-fmv:
+    runs-on: ubuntu-latest
+    if: github.repository != '' && secrets.CRON_SECRET != ''
+    env:
+      CRON_BASE_URL: ${{ vars.CRON_BASE_URL || 'https://localhost:3000' }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+      PROGRAM_YEAR: ${{ github.event.inputs.programYear || '' }}
+
+    steps:
+      - name: Run aggregate recalculation job
+        run: |
+          BODY='{"cronSecret":"'"$CRON_SECRET"'"}'
+          if [ -n "$PROGRAM_YEAR" ]; then
+            BODY=$(node -e "console.log(JSON.stringify({cronSecret:process.env.CRON_SECRET,programYear:process.env.PROGRAM_YEAR}))")
+          fi
+          curl -sf -X POST "$CRON_BASE_URL/api/jobs/aggregate" \
+            -H "Content-Type: application/json" \
+            -H "x-cron-secret: $CRON_SECRET" \
+            -d "$BODY"
+
+      - name: Sync FMV rates
+        run: |
+          curl -sf -X POST "$CRON_BASE_URL/api/connectors/fmv/sync" \
+            -H "Content-Type: application/json" \
+            -H "x-cron-secret: $CRON_SECRET" \
+            -d '{"cronSecret":"'"$CRON_SECRET"'","sourceKey":"fmv_engine","rates":[]}'

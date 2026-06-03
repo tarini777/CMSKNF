@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { emailService } from '@/lib/email-service'
 import { mlService } from '@/lib/ml-service'
+import { readJsonField } from '@/lib/prisma-json'
 
 export async function POST(request: NextRequest) {
   try {
@@ -149,7 +150,9 @@ async function handleDailySummary(recipients: string[]) {
     ])
 
     // Calculate summary metrics
-    const anomaliesDetected = records.filter(r => r.appliedRules?.anomalyDetection?.isAnomaly).length
+    const anomaliesDetected = records.filter(
+      (r) => (readJsonField(r.appliedRules, 'anomalyDetection') as { isAnomaly?: boolean } | undefined)?.isAnomaly
+    ).length
     const complianceScore = records.length > 0 
       ? Math.round((records.filter(r => r.isReportable).length / records.length) * 100)
       : 100
@@ -157,7 +160,8 @@ async function handleDailySummary(recipients: string[]) {
     // Get top anomaly types
     const anomalyTypes: { [key: string]: number } = {}
     records.forEach(record => {
-      const reasons = record.appliedRules?.anomalyDetection?.reasons || []
+      const anomaly = readJsonField(record.appliedRules, 'anomalyDetection') as { reasons?: string[] } | undefined
+      const reasons = anomaly?.reasons || []
       reasons.forEach((reason: string) => {
         anomalyTypes[reason] = (anomalyTypes[reason] || 0) + 1
       })
@@ -208,35 +212,43 @@ async function handleBatchAnomalyAlert(recipients: string[], options: any) {
     }
 
     // Get records with anomaly detection results
-    const records = await prisma.cMSRecord.findMany({
+    const recordsRaw = await prisma.cMSRecord.findMany({
       where: {
         id: { in: recordIds },
-        appliedRules: {
-          path: ['anomalyDetection'],
-          not: null
-        }
-      }
+        appliedRules: { not: undefined },
+      },
     })
+    const records = recordsRaw.filter((r) => readJsonField(r.appliedRules, 'anomalyDetection') != null)
 
     if (records.length === 0) {
       throw new Error('No records with anomaly data found')
     }
 
     // Create alerts
-    const alerts = records.map(record => ({
-      recordId: record.id,
-      record,
-      anomalyResult: record.appliedRules?.anomalyDetection,
-      severity: record.appliedRules?.anomalyDetection?.riskLevel || 'medium',
-      detectedAt: new Date(record.updatedAt)
-    }))
+    const alerts = records.map(record => {
+      const anomalyResult = readJsonField(record.appliedRules, 'anomalyDetection') as {
+        riskLevel?: string
+      } | undefined
+      return {
+        recordId: record.id,
+        record,
+        anomalyResult,
+        severity: anomalyResult?.riskLevel || 'medium',
+        detectedAt: new Date(record.updatedAt),
+      }
+    })
 
     // Filter by severity if specified
     const filteredAlerts = severity 
       ? alerts.filter(alert => alert.severity === severity)
       : alerts
 
-    return await emailService.sendBatchAnomalyAlerts(filteredAlerts, recipients)
+    return await emailService.sendBatchAnomalyAlerts(
+      filteredAlerts.filter((a) => a.anomalyResult != null) as Parameters<
+        typeof emailService.sendBatchAnomalyAlerts
+      >[0],
+      recipients
+    )
   } catch (error) {
     console.error('Error handling batch anomaly alert:', error)
     return false

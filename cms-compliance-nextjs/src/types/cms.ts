@@ -1,106 +1,31 @@
 // CMS Compliance Data Types
-export interface CMSRecord {
+import type { CMSRecord as PrismaCMSRecord } from '@prisma/client'
+
+/**
+ * App CMS record — required core fields plus optional Prisma columns.
+ * Accepts full DB rows and partial test fixtures.
+ */
+export type CMSRecord = Partial<PrismaCMSRecord> & {
   id: string
   recordId: string
   coveredRecipientId: string
   coveredRecipientName: string
   coveredRecipientType: string
-  teachingHospitalId?: string
-  teachingHospitalName?: string
-  teachingHospitalCcn?: string
-  coveredRecipientNpi?: string
-  physicianProfileId?: string
-  physicianFirstName?: string
-  physicianMiddleName?: string
-  physicianLastName?: string
-  physicianNameSuffix?: string
-  recipientPrimaryBusinessStreetAddressLine1?: string
-  recipientPrimaryBusinessStreetAddressLine2?: string
-  recipientCity?: string
-  recipientState?: string
-  recipientZipCode?: string
-  recipientCountry?: string
-  recipientProvince?: string
-  recipientPostalCode?: string
-  physicianPrimaryType?: string
-  physicianSpecialty?: string
-  physicianLicenseStateCode1?: string
-  physicianLicenseStateCode2?: string
-  physicianLicenseStateCode3?: string
-  physicianLicenseStateCode4?: string
-  physicianLicenseStateCode5?: string
-  submittingApplicableManufacturerOrApplicableGpoName?: string
-  applicableManufacturerOrApplicableGpoMakingPaymentId?: string
-  applicableManufacturerOrApplicableGpoMakingPaymentName?: string
-  applicableManufacturerOrApplicableGpoMakingPaymentState?: string
-  applicableManufacturerOrApplicableGpoMakingPaymentCountry?: string
   totalAmountOfPaymentUsdollars: number
-  dateOfPayment?: string
-  numberOfPaymentsIncludedInTotalAmount?: string
-  formOfPaymentOrTransferOfValue?: string
-  natureOfPaymentOrTransferOfValue?: string
-  cityOfTravel?: string
-  stateOfTravel?: string
-  countryOfTravel?: string
-  physicianOwnershipIndicator?: string
-  thirdPartyPaymentRecipientIndicator?: string
-  nameOfThirdPartyEntityReceivingPaymentOrTransferOfValue?: string
-  charityIndicator?: string
-  thirdPartyEqualsCoveredRecipientIndicator?: string
-  contextualInformation?: string
-  delayInPublicationIndicator?: string
-  disputeStatusForPublication?: string
-  productIndicator?: string
-  relatedProductIndicator?: string
-  changeType?: string
-  sourceSystem?: string
-  nameOfAssociatedCoveredDrugOrBiological1?: string
-  nameOfAssociatedCoveredDrugOrBiological2?: string
-  nameOfAssociatedCoveredDrugOrBiological3?: string
-  nameOfAssociatedCoveredDrugOrBiological4?: string
-  nameOfAssociatedCoveredDrugOrBiological5?: string
-  ndcOfAssociatedCoveredDrugOrBiological1?: string
-  ndcOfAssociatedCoveredDrugOrBiological2?: string
-  ndcOfAssociatedCoveredDrugOrBiological3?: string
-  ndcOfAssociatedCoveredDrugOrBiological4?: string
-  ndcOfAssociatedCoveredDrugOrBiological5?: string
-  nameOfAssociatedCoveredDeviceOrMedicalSupply1?: string
-  nameOfAssociatedCoveredDeviceOrMedicalSupply2?: string
-  nameOfAssociatedCoveredDeviceOrMedicalSupply3?: string
-  nameOfAssociatedCoveredDeviceOrMedicalSupply4?: string
-  nameOfAssociatedCoveredDeviceOrMedicalSupply5?: string
-  programYear?: string
-  paymentPublicationDate?: string
-  
-  // Processing fields
   isReportable: boolean
-  humanDecision?: 'approve' | 'reject' | 'pending'
-  humanReason?: string
-  decisionTime?: Date
-  finalReportable?: boolean
-  appliedRules?: any
-  reason?: string
-
-  // COM-TRANSP-001 transparency fields
-  cmsReportCategory?: 'general' | 'research' | 'ownership'
-  paymentCurrency?: string
-  exchangeRate?: number
-  reportingCurrencyValue?: number
-  consentForDisclosure?: boolean
-  disclosureType?: 'individual' | 'aggregate'
-  aggregateStatus?: 'not_applicable' | 'pending' | 'reportable' | 'non_reportable'
-  recipientAnnualAggregate?: number
-  disputeWorkflowStatus?: string
-  disputeNotes?: string
-  
-  // Audit fields
   createdAt: Date
   updatedAt: Date
-  
-  // Relations
-  reviewSessionId?: string
-  reviewSession?: ReviewSession
-  spendEventId?: string | null
+  /** Legacy alias used in open-payments-api */
+  providerName?: string
+  amount?: number
+  date?: string
+  description?: string
+  status?: string
+  category?: string
+  natureOfPayment?: string
+  recipientType?: string
+  manufacturerName?: string
+  disputeStatus?: string
 }
 
 /** Record enriched with PUF line data — returned by /api/records when lineage exists. */
@@ -130,19 +55,7 @@ export interface RecordWithPuf extends CMSRecord {
   ruleCitations?: import('@/lib/rule-citation-service').RecordRuleCitations
 }
 
-export interface CompanyRule {
-  id: string
-  name: string
-  description: string
-  ruleType: 'threshold' | 'exclusion' | 'inclusion' | 'validation'
-  conditions: any
-  isActive: boolean
-  priority: number
-  createdBy?: string
-  updatedBy?: string
-  createdAt: Date
-  updatedAt: Date
-}
+export type CompanyRule = import('@prisma/client').CompanyRule
 
 export interface ReviewSession {
   id: string
@@ -154,13 +67,13 @@ export interface ReviewSession {
   reportableCount: number
   nonReportableCount: number
   errorCount: number
-  status: 'pending_review' | 'in_review' | 'completed'
-  createdBy?: string
+  status: 'pending_review' | 'in_review' | 'completed' | string
+  createdBy?: string | null
   createdAt: Date
   updatedAt: Date
   
   // Relations
-  records: CMSRecord[]
+  records?: CMSRecord[]
 }
 
 export interface DataUpload {

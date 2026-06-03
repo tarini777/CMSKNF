@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
       companyName: searchParams.get('companyName') || undefined,
     })
 
-    return new NextResponse(pdf, {
+    return new NextResponse(new Uint8Array(pdf), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="attestation-pack-${programYear}.pdf"`,

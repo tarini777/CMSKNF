@@ -289,3 +289,74 @@ export const CMS_OWNERSHIP_PUF_HEADERS: (keyof CmsOwnershipPufFields)[] = [
   'interest_held_by_physician_or_an_immediate_family_member',
   'payment_publication_date',
 ]
+
+const PI_IDENTITY_SUFFIXES = [
+  'covered_recipient_type',
+  'teaching_hospital_ccn',
+  'teaching_hospital_id',
+  'teaching_hospital_name',
+  'covered_recipient_profile_id',
+  'covered_recipient_npi',
+  'covered_recipient_first_name',
+  'covered_recipient_middle_name',
+  'covered_recipient_last_name',
+  'covered_recipient_name_suffix',
+  'recipient_primary_business_street_address_line1',
+  'recipient_primary_business_street_address_line2',
+  'recipient_city',
+  'recipient_state',
+  'recipient_zip_code',
+  'recipient_country',
+  'recipient_province',
+  'recipient_postal_code',
+  'covered_recipient_primary_type_1',
+  'covered_recipient_specialty_1',
+  'covered_recipient_license_state_code1',
+  'covered_recipient_license_state_code2',
+  'covered_recipient_license_state_code3',
+  'covered_recipient_license_state_code4',
+  'covered_recipient_license_state_code5',
+] as const
+
+function buildPrincipalInvestigatorHeaders(maxPi = 5): string[] {
+  const keys: string[] = []
+  for (let n = 1; n <= maxPi; n++) {
+    for (const suffix of PI_IDENTITY_SUFFIXES) {
+      keys.push(`principal_investigator_${n}_${suffix}`)
+    }
+  }
+  return keys
+}
+
+/** Research-only fields inserted after general payment block (Appendix D). */
+export const CMS_RESEARCH_EXTENSION_HEADERS = [
+  'clinicaltrials_gov_identifier',
+  'name_of_study',
+  'context_of_research',
+  'preclinical_research_indicator',
+  'research_information_link',
+  'noncovered_recipient_entity_name',
+  'expenditure_category1',
+  'expenditure_category2',
+  'expenditure_category3',
+  'expenditure_category4',
+  'expenditure_category5',
+  'expenditure_category6',
+  'payment_currency',
+] as const
+
+/**
+ * Ordered research PUF export columns — Jan 2025 Appendix D alignment.
+ * General block (91) + research extensions + PI 1–5 identity blocks (252 total).
+ */
+export const CMS_RESEARCH_PUF_HEADERS: string[] = [
+  ...CMS_GENERAL_PUF_HEADERS.slice(0, -3),
+  ...CMS_RESEARCH_EXTENSION_HEADERS,
+  'record_id',
+  'program_year',
+  'payment_publication_date',
+  ...buildPrincipalInvestigatorHeaders(5),
+]
+
+export const CMS_RESEARCH_PUF_FIELD_COUNT = CMS_RESEARCH_PUF_HEADERS.length
+

@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 
 export type AuditAction = 'create' | 'update' | 'delete' | 'approve' | 'reject'
-export type AuditEntityType = 'record' | 'rule' | 'session'
+export type AuditEntityType = 'record' | 'rule' | 'session' | 'dedup_cluster'
 
 interface CreateAuditLogParams {
   action: AuditAction

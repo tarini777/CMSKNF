@@ -47,7 +47,6 @@ export interface OpenPaymentsRecord {
   thirdPartyEqualsCoveredRecipientIndicator?: string
   contextualInformation?: string
   delayInPublicationIndicator?: string
-  recordId?: string
   disputeStatusForPublication?: string
   productIndicator?: string
   nameOfAssociatedCoveredDrugOrBiological1?: string
@@ -65,8 +64,6 @@ export interface OpenPaymentsRecord {
   nameOfAssociatedCoveredDeviceOrMedicalSupply3?: string
   nameOfAssociatedCoveredDeviceOrMedicalSupply4?: string
   nameOfAssociatedCoveredDeviceOrMedicalSupply5?: string
-  programYear?: string
-  paymentPublicationDate?: string
 }
 
 export interface OpenPaymentsSearchParams {
@@ -117,6 +114,8 @@ export interface OpenPaymentsTrend {
   averageAmount: number
   uniquePhysicians: number
   uniqueManufacturers: number
+  topManufacturer?: string
+  topSpecialty?: string
 }
 
 export class OpenPaymentsAPIService {
@@ -642,32 +641,36 @@ export class OpenPaymentsAPIService {
         totalPayments: 1250000,
         uniquePhysicians: 450000,
         averageAmount: 3040,
+        uniqueManufacturers: 120,
         topManufacturer: 'Gilead Sciences',
-        topSpecialty: 'Oncology'
+        topSpecialty: 'Oncology',
       },
       {
         year: '2022',
         totalAmount: 4100000000,
         totalPayments: 1320000,
         uniquePhysicians: 465000,
+        uniqueManufacturers: 125,
         averageAmount: 3106,
         topManufacturer: 'Gilead Sciences',
-        topSpecialty: 'Oncology'
+        topSpecialty: 'Oncology',
       },
       {
         year: '2023',
         totalAmount: 4350000000,
         totalPayments: 1380000,
         uniquePhysicians: 480000,
+        uniqueManufacturers: 130,
         averageAmount: 3152,
         topManufacturer: 'Gilead Sciences',
-        topSpecialty: 'Oncology'
+        topSpecialty: 'Oncology',
       },
       {
         year: '2024',
         totalAmount: 4520000000,
         totalPayments: 1420000,
         uniquePhysicians: 495000,
+        uniqueManufacturers: 135,
         averageAmount: 3183,
         topManufacturer: 'Gilead Sciences',
         topSpecialty: 'Oncology'

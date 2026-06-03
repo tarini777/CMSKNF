@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { mlService } from '@/lib/ml-service'
+import { readJsonField, toInputJson } from '@/lib/prisma-json'
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,16 +51,16 @@ export async function POST(request: NextRequest) {
       return prisma.cMSRecord.update({
         where: { id: record.id },
         data: {
-          appliedRules: {
+          appliedRules: toInputJson({
             anomalyDetection: {
               isAnomaly: result.isAnomaly,
               anomalyScore: result.anomalyScore,
               confidence: result.confidence,
               riskLevel: result.riskLevel,
               reasons: result.reasons,
-              detectedAt: new Date().toISOString()
-            }
-          }
+              detectedAt: new Date().toISOString(),
+            },
+          }),
         }
       })
     })
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
       highRiskRecords: anomalyResults.filter(r => r.riskLevel === 'high' || r.riskLevel === 'critical').length,
       averageAnomalyScore: anomalyResults.reduce((sum, r) => sum + r.anomalyScore, 0) / anomalyResults.length,
       dataQualityScore: qualityScore.overallScore,
-      topAnomalyReasons: this.getTopAnomalyReasons(anomalyResults)
+      topAnomalyReasons: getTopAnomalyReasons(anomalyResults),
     }
 
     return NextResponse.json({
@@ -102,23 +103,21 @@ export async function GET(request: NextRequest) {
     const sessionId = searchParams.get('sessionId')
 
     // Get recent anomaly detection results
-    const records = await prisma.cMSRecord.findMany({
+    const recordsRaw = await prisma.cMSRecord.findMany({
       where: {
         ...(sessionId && { reviewSessionId: sessionId }),
-        appliedRules: {
-          path: ['anomalyDetection'],
-          not: null
-        }
+        appliedRules: { not: undefined },
       },
       orderBy: { updatedAt: 'desc' },
-      take: 100
+      take: 100,
     })
+    const records = recordsRaw.filter((r) => readJsonField(r.appliedRules, 'anomalyDetection') != null)
 
     const anomalyResults = records.map(record => ({
       recordId: record.id,
       coveredRecipientName: record.coveredRecipientName,
       totalAmountOfPaymentUsdollars: record.totalAmountOfPaymentUsdollars,
-      anomalyDetection: record.appliedRules?.anomalyDetection
+      anomalyDetection: readJsonField(record.appliedRules, 'anomalyDetection'),
     }))
 
     return NextResponse.json({

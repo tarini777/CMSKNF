@@ -61,7 +61,7 @@ export default function AnomalyTypesChart({ data, title = "Top Anomaly Types" }:
           color: 'rgb(107, 114, 128)', // Gray-500
           font: {
             size: 12,
-            weight: '500' as const,
+            weight: 500,
           },
         },
       },
@@ -104,7 +104,7 @@ export default function AnomalyTypesChart({ data, title = "Top Anomaly Types" }:
           color: 'rgb(107, 114, 128)',
           font: {
             size: 12,
-            weight: '500' as const,
+            weight: 500,
           },
         },
         grid: {
@@ -125,7 +125,7 @@ export default function AnomalyTypesChart({ data, title = "Top Anomaly Types" }:
           color: 'rgb(107, 114, 128)',
           font: {
             size: 12,
-            weight: '500' as const,
+            weight: 500,
           },
         },
         grid: {
@@ -145,7 +145,7 @@ export default function AnomalyTypesChart({ data, title = "Top Anomaly Types" }:
           color: 'rgb(107, 114, 128)',
           font: {
             size: 12,
-            weight: '500' as const,
+            weight: 500,
           },
         },
         grid: {
@@ -163,7 +163,7 @@ export default function AnomalyTypesChart({ data, title = "Top Anomaly Types" }:
 
   return (
     <div className="w-full h-80">
-      <Bar data={chartData} options={options} />
+      <Bar data={chartData} options={options as object} />
     </div>
   )
 }

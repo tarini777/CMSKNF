@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { externalAPIService } from '@/lib/external-apis'
+import { readJsonField, toInputJson } from '@/lib/prisma-json'
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,13 +36,13 @@ export async function POST(request: NextRequest) {
         return prisma.cMSRecord.update({
           where: { id: recordId },
           data: {
-            appliedRules: {
+            appliedRules: toInputJson({
               externalValidation: {
                 results,
-                validatedAt: new Date().toISOString()
-              }
-            }
-          }
+                validatedAt: new Date().toISOString(),
+              },
+            }),
+          },
         })
       })
 
@@ -80,13 +81,13 @@ export async function POST(request: NextRequest) {
       await prisma.cMSRecord.update({
         where: { id: recordId },
         data: {
-          appliedRules: {
+          appliedRules: toInputJson({
             externalValidation: {
               results: externalData,
-              validatedAt: new Date().toISOString()
-            }
-          }
-        }
+              validatedAt: new Date().toISOString(),
+            },
+          }),
+        },
       })
 
       return NextResponse.json({
@@ -125,21 +126,19 @@ export async function GET(request: NextRequest) {
     } else {
       records = await prisma.cMSRecord.findMany({
         where: {
-          appliedRules: {
-            path: ['externalValidation'],
-            not: null
-          }
+          appliedRules: { not: undefined },
         },
         orderBy: { updatedAt: 'desc' },
-        take: 50
+        take: 50,
       })
+      records = records.filter((r) => readJsonField(r.appliedRules, 'externalValidation') != null)
     }
 
     const validationResults = records.map(record => ({
       recordId: record.id,
       coveredRecipientName: record.coveredRecipientName,
       totalAmountOfPaymentUsdollars: record.totalAmountOfPaymentUsdollars,
-      externalValidation: record.appliedRules?.externalValidation
+      externalValidation: readJsonField(record.appliedRules, 'externalValidation'),
     }))
 
     return NextResponse.json({

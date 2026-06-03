@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 import {
   CMS_GENERAL_PUF_HEADERS,
   CMS_OWNERSHIP_PUF_HEADERS,
+  CMS_RESEARCH_PUF_HEADERS,
   CMS_RESEARCH_PUF_REQUIRED_FIELDS,
   type CmsGeneralPufFields,
   type CmsOwnershipPufFields,
@@ -120,7 +121,7 @@ function validateGeneralRows(
           fileType: 'general',
           message: `Missing required field ${key}`,
           recordId: line.recordId || fields.record_id,
-          field: key,
+          field: String(key),
         })
       }
     }
@@ -152,7 +153,7 @@ function validateResearchRows(
           fileType: 'research',
           message: `Missing required research field ${key}`,
           recordId: line.recordId || fields.record_id,
-          field: key,
+          field: String(key),
         })
       }
     }
@@ -174,12 +175,138 @@ function validateOwnershipRows(
           fileType: 'ownership',
           message: `Missing required ownership field ${key}`,
           recordId: line.recordId || fields.record_id,
-          field: key,
+          field: String(key),
         })
       }
     }
+
+    const npi = String(fields.physician_npi || '').replace(/\D/g, '')
+    if (npi && npi.length !== 10) {
+      issues.push({
+        severity: 'error',
+        code: 'invalid_npi',
+        fileType: 'ownership',
+        message: 'physician_npi must be exactly 10 digits',
+        recordId: line.recordId || fields.record_id,
+        field: 'physician_npi',
+      })
+    } else if (!npi && isEmpty(fields.physician_profile_id)) {
+      issues.push({
+        severity: 'warning',
+        code: 'identity_incomplete',
+        fileType: 'ownership',
+        message: 'Ownership row missing both physician_npi and physician_profile_id',
+        recordId: line.recordId || fields.record_id,
+      })
+    }
+
+    const invested = parseFloat(String(fields.total_amount_invested_usdollars ?? ''))
+    const value = parseFloat(String(fields.value_of_interest ?? ''))
+    if (!Number.isNaN(invested) && invested < 0) {
+      issues.push({
+        severity: 'error',
+        code: 'invalid_amount',
+        fileType: 'ownership',
+        message: 'total_amount_invested_usdollars cannot be negative',
+        recordId: line.recordId || fields.record_id,
+        field: 'total_amount_invested_usdollars',
+      })
+    }
+    if (!Number.isNaN(value) && value > 0 && isEmpty(fields.terms_of_interest)) {
+      issues.push({
+        severity: 'error',
+        code: 'terms_required',
+        fileType: 'ownership',
+        message: 'terms_of_interest required when value_of_interest is populated',
+        recordId: line.recordId || fields.record_id,
+        field: 'terms_of_interest',
+      })
+    }
+
+    const holder = String(fields.interest_held_by_physician_or_an_immediate_family_member || '')
+      .trim()
+      .toLowerCase()
+    if (holder.startsWith('y') && isEmpty(fields.physician_last_name)) {
+      issues.push({
+        severity: 'error',
+        code: 'family_interest_identity',
+        fileType: 'ownership',
+        message: 'physician_last_name required when interest held by physician or family',
+        recordId: line.recordId || fields.record_id,
+        field: 'physician_last_name',
+      })
+    }
+
+    const changeType = String(fields.change_type || '').toUpperCase()
+    if (changeType && !['N', 'C', 'D'].includes(changeType)) {
+      issues.push({
+        severity: 'warning',
+        code: 'invalid_change_type',
+        fileType: 'ownership',
+        message: `change_type should be N, C, or D (got ${fields.change_type})`,
+        recordId: line.recordId || fields.record_id,
+        field: 'change_type',
+      })
+    }
   }
   return issues
+}
+
+/** Validate an OPS test-file CSV against Jan 2025 dictionary column order. */
+export function validateOpsTestFileCsv(
+  fileType: 'general' | 'research' | 'ownership',
+  csvContent: string
+): PufFileValidation {
+  const expectedHeaders =
+    fileType === 'general'
+      ? CMS_GENERAL_PUF_HEADERS
+      : fileType === 'research'
+        ? CMS_RESEARCH_PUF_HEADERS
+        : CMS_OWNERSHIP_PUF_HEADERS
+
+  const headerCheck = headerMatchesDictionary(csvContent, expectedHeaders)
+  const issues: PufValidationIssue[] = []
+
+  if (!headerCheck.match) {
+    issues.push({
+      severity: 'error',
+      code: 'header_mismatch',
+      fileType,
+      message: `OPS test file header mismatch: expected ${expectedHeaders.length} columns, got ${headerCheck.count}`,
+    })
+  }
+
+  const dataLines = csvContent.split('\n').slice(1).filter((l) => l.trim())
+  if (dataLines.length === 0 && headerCheck.match) {
+    issues.push({
+      severity: 'warning',
+      code: 'empty_file',
+      fileType,
+      message: 'OPS test file has headers but no data rows',
+    })
+  }
+
+  for (let i = 0; i < dataLines.length; i++) {
+    const cols = dataLines[i].split(',')
+    if (cols.length !== expectedHeaders.length) {
+      issues.push({
+        severity: 'error',
+        code: 'row_column_count',
+        fileType,
+        message: `Row ${i + 2}: expected ${expectedHeaders.length} columns, got ${cols.length}`,
+      })
+    }
+  }
+
+  return {
+    fileType,
+    rowCount: dataLines.length,
+    expectedFieldCount: expectedHeaders.length,
+    actualHeaderCount: headerCheck.count,
+    headerMatch: headerCheck.match,
+    populatedFieldRate: 1,
+    issues,
+  }
 }
 
 export async function validatePufExports(programYear?: string): Promise<PufValidationReport> {
@@ -219,6 +346,15 @@ export async function validatePufExports(programYear?: string): Promise<PufValid
   generalIssues.push(...validateGeneralRows(generalLines))
 
   const researchIssues: PufValidationIssue[] = []
+  const researchHeader = headerMatchesDictionary(researchCsv, CMS_RESEARCH_PUF_HEADERS)
+  if (!researchHeader.match && researchLines.length > 0) {
+    researchIssues.push({
+      severity: 'error',
+      code: 'header_mismatch',
+      fileType: 'research',
+      message: `Research PUF header count/order mismatch: expected ${CMS_RESEARCH_PUF_HEADERS.length}, got ${researchHeader.count}`,
+    })
+  }
   if (researchLines.length > 0) {
     researchIssues.push(...validateResearchRows(researchLines))
   }
@@ -250,14 +386,14 @@ export async function validatePufExports(programYear?: string): Promise<PufValid
     {
       fileType: 'research',
       rowCount: researchLines.length,
-      expectedFieldCount: CMS_RESEARCH_PUF_REQUIRED_FIELDS.length,
-      actualHeaderCount: parseCsvHeaders(researchCsv).length,
-      headerMatch: true,
+      expectedFieldCount: CMS_RESEARCH_PUF_HEADERS.length,
+      actualHeaderCount: researchHeader.count,
+      headerMatch: researchHeader.match || researchLines.length === 0,
       populatedFieldRate:
         researchLines.length > 0
           ? fieldPopulationRate(
               researchLines.map((l) => l.pufFields as Record<string, unknown>),
-              [...CMS_RESEARCH_PUF_REQUIRED_FIELDS]
+              CMS_RESEARCH_PUF_HEADERS
             )
           : 1,
       issues: researchIssues,

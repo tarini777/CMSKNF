@@ -8,6 +8,8 @@ export type SupportedConnectorKey =
   | 'cvent'
   | 'ctms'
   | 'greenphire'
+  | 'sap_ap'
+  | 'clm'
 
 export interface ConnectorFieldMapping {
   /** Upstream field name (case-insensitive match) */

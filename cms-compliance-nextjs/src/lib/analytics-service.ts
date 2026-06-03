@@ -1,4 +1,11 @@
 import { CMSRecord, CompanyRule, ReviewSession } from '@/types/cms'
+import { readJsonField } from '@/lib/prisma-json'
+
+function anomalyMeta(record: CMSRecord): { isAnomaly?: boolean; reasons?: string[] } | undefined {
+  return readJsonField(record.appliedRules, 'anomalyDetection') as
+    | { isAnomaly?: boolean; reasons?: string[] }
+    | undefined
+}
 
 export interface AnalyticsMetrics {
   overview: {
@@ -257,7 +264,7 @@ export class AnalyticsService {
     
     records.forEach(record => {
       const month = new Date(record.createdAt).toISOString().substring(0, 7)
-      const hasAnomaly = record.appliedRules?.anomalyDetection?.isAnomaly || false
+      const hasAnomaly = anomalyMeta(record)?.isAnomaly || false
       
       if (hasAnomaly) {
         monthlyCounts[month] = (monthlyCounts[month] || 0) + 1
@@ -277,7 +284,7 @@ export class AnalyticsService {
     const anomalyTypes: { [key: string]: number } = {}
     
     records.forEach(record => {
-      const reasons = record.appliedRules?.anomalyDetection?.reasons || []
+      const reasons = anomalyMeta(record)?.reasons || []
       reasons.forEach((reason: string) => {
         anomalyTypes[reason] = (anomalyTypes[reason] || 0) + 1
       })
@@ -357,8 +364,8 @@ export class AnalyticsService {
    */
   private calculateProcessingEfficiency(records: CMSRecord[]) {
     const totalRecords = records.length
-    const successfulRecords = records.filter(record => !record.appliedRules?.anomalyDetection?.isAnomaly).length
-    const errorRecords = records.filter(record => record.appliedRules?.anomalyDetection?.isAnomaly).length
+    const successfulRecords = records.filter(record => !anomalyMeta(record)?.isAnomaly).length
+    const errorRecords = records.filter(record => anomalyMeta(record)?.isAnomaly).length
 
     return {
       averageProcessingTime: 2.5, // Simulated
@@ -410,7 +417,7 @@ export class AnalyticsService {
     const totalRecords = records.length
     const reportableRecords = records.filter(r => r.isReportable).length
     const nonReportableRecords = totalRecords - reportableRecords
-    const anomaliesDetected = records.filter(r => r.appliedRules?.anomalyDetection?.isAnomaly).length
+    const anomaliesDetected = records.filter((r) => anomalyMeta(r)?.isAnomaly).length
     const complianceScore = this.calculateComplianceScore(records)
 
     return {
@@ -423,7 +430,7 @@ export class AnalyticsService {
   }
 
   private generateReportDetails(records: CMSRecord[]) {
-    const anomalies = records.filter(r => r.appliedRules?.anomalyDetection?.isAnomaly)
+    const anomalies = records.filter((r) => anomalyMeta(r)?.isAnomaly)
     const qualityIssues = this.identifyQualityIssues(records)
     const recommendations = this.generateRecommendations(records, this.calculateInsights(records))
 
@@ -469,11 +476,13 @@ export class AnalyticsService {
   }
 
   private isRecordCompliant(record: CMSRecord): boolean {
-    return record.coveredRecipientName &&
-           record.coveredRecipientId &&
-           record.totalAmountOfPaymentUsdollars >= 0 &&
-           record.dateOfPayment &&
-           !record.appliedRules?.anomalyDetection?.isAnomaly
+    return Boolean(
+      record.coveredRecipientName &&
+        record.coveredRecipientId &&
+        record.totalAmountOfPaymentUsdollars >= 0 &&
+        record.dateOfPayment &&
+        !anomalyMeta(record)?.isAnomaly
+    )
   }
 
   private identifyQualityIssues(records: CMSRecord[]): string[] {

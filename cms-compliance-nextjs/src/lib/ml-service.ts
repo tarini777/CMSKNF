@@ -307,13 +307,13 @@ export class MLService {
   /**
    * Helper methods
    */
-  private parseDate(dateString: string | undefined): number {
+  private parseDate(dateString: string | null | undefined): number {
     if (!dateString) return 0
     const date = new Date(dateString)
     return isNaN(date.getTime()) ? 0 : date.getTime()
   }
 
-  private encodeString(str: string | undefined): number {
+  private encodeString(str: string | null | undefined): number {
     if (!str) return 0
     return str.split('').reduce((hash, char) => hash + char.charCodeAt(0), 0) % 1000
   }

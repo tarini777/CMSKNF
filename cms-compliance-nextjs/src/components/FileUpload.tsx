@@ -237,7 +237,7 @@ export default function FileUpload({ onUploadSuccess, onUploadError }: FileUploa
               </div>
             </div>
             
-            {uploadResult.errorCount > 0 && (
+            {(uploadResult.errorCount ?? 0) > 0 && (
               <div className="text-center">
                 <div className="text-2xl font-bold text-red-700 dark:text-red-300">
                   {uploadResult.errorCount}
@@ -253,7 +253,7 @@ export default function FileUpload({ onUploadSuccess, onUploadError }: FileUploa
                 </code>
               </p>
               <p className="text-sm text-muted-foreground">
-                📋 Next Steps: Go to "Review & Approval" tab to review AI decisions and make human judgments.
+                📋 Next Steps: Go to &quot;Review &amp; Approval&quot; tab to review AI decisions and make human judgments.
               </p>
             </div>
           </CardContent>

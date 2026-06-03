@@ -27,6 +27,8 @@ describe('Sprint C — CMS fidelity', () => {
   it('registers CTMS and Greenphire research connectors', () => {
     expect(SUPPORTED_CONNECTOR_KEYS).toContain('ctms')
     expect(SUPPORTED_CONNECTOR_KEYS).toContain('greenphire')
+    expect(SUPPORTED_CONNECTOR_KEYS).toContain('sap_ap')
+    expect(SUPPORTED_CONNECTOR_KEYS).toContain('clm')
     expect(CONNECTOR_REGISTRY.ctms.category).toBe('clinical')
     expect(CONNECTOR_REGISTRY.greenphire.mappingVersion).toContain('greenphire')
   })

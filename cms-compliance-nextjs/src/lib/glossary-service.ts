@@ -839,7 +839,7 @@ export class GlossaryService {
       terms = terms.filter((t) => t.cmsCategory === options.cmsCategory)
     }
     if (options?.letter) {
-      terms = terms.filter((t) => t.sortLetter === options.letter.toUpperCase())
+      terms = terms.filter((t) => t.sortLetter === (options.letter ?? '').toUpperCase())
     }
     return terms.sort((a, b) => a.term.localeCompare(b.term))
   }

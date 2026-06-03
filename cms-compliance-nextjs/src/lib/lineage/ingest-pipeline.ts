@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import type { Prisma } from '@prisma/client'
 import type { TransparencyAnalysis } from '@/lib/transparency-rules-engine'
 import type { CmsFileType } from '@/types/cms-puf'
 import {
@@ -15,8 +16,10 @@ import {
   hcpInputFromGeneralPuf,
   resolveOrCreateHcpMaster,
 } from '@/lib/lineage/hcp-master-service'
+import { enrichHcpInputFromOpenData } from '@/lib/veeva-open-data-service'
 import { assignDedupClusterForSpendEvent } from '@/lib/lineage/dedup-cluster-service'
 import { extractCmsRecordFieldsFromCanonical } from '@/lib/lineage/record-view-service'
+import { toInputJson } from '@/lib/prisma-json'
 
 export const RULES_ENGINE_VERSION = 'transparency-rules-1.0'
 export const NORMALIZATION_VERSION = 'cms-puf-mapper-2025-01'
@@ -87,7 +90,9 @@ export async function ingestSourceRow(input: IngestRowInput): Promise<IngestRowR
 
   const hcpMaster =
     category !== 'ownership'
-      ? await resolveOrCreateHcpMaster(hcpInputFromGeneralPuf(generalPuf, input.sourceKey))
+      ? await resolveOrCreateHcpMaster(
+          await enrichHcpInputFromOpenData(hcpInputFromGeneralPuf(generalPuf, input.sourceKey))
+        )
       : null
 
   const dedupKey = buildDedupKey(
@@ -125,7 +130,7 @@ export async function ingestSourceRow(input: IngestRowInput): Promise<IngestRowR
       sourceSystem: dataSource.sourceKey,
       normalizationVersion: NORMALIZATION_VERSION,
       rulesEngineVersion: RULES_ENGINE_VERSION,
-      ruleInputSnapshot: ruleSnapshot,
+      ruleInputSnapshot: toInputJson(ruleSnapshot),
       status: input.analysis.isReportable ? 'ruled_reportable' : 'ruled_non_reportable',
     },
   })
@@ -146,7 +151,7 @@ export async function ingestSourceRow(input: IngestRowInput): Promise<IngestRowR
       data: {
         spendEventId: spendEvent.id,
         ...pufSync,
-      },
+      } as Prisma.CMSRecordUpdateInput,
     })
   }
 
@@ -159,7 +164,7 @@ export async function ingestSourceRow(input: IngestRowInput): Promise<IngestRowR
     const line = await prisma.cmsResearchPaymentLine.create({
       data: {
         spendEventId: spendEvent.id,
-        pufFields: researchPuf,
+        pufFields: toInputJson(researchPuf),
         recordId: researchPuf.record_id || generalPuf.record_id || spendEvent.id,
         programYear,
         totalAmount: amount,
@@ -168,7 +173,7 @@ export async function ingestSourceRow(input: IngestRowInput): Promise<IngestRowR
         preclinicalIndicator: researchPuf.preclinical_research_indicator,
         isReportable: input.analysis.isReportable,
         rulesEngineVersion: RULES_ENGINE_VERSION,
-        ruleInputSnapshot: ruleSnapshot,
+        ruleInputSnapshot: toInputJson(ruleSnapshot),
       },
     })
     pufLineId = line.id
@@ -178,7 +183,7 @@ export async function ingestSourceRow(input: IngestRowInput): Promise<IngestRowR
     const line = await prisma.cmsOwnershipPaymentLine.create({
       data: {
         spendEventId: spendEvent.id,
-        pufFields: ownershipPuf,
+        pufFields: toInputJson(ownershipPuf),
         recordId: ownershipPuf.record_id || spendEvent.id,
         programYear,
         physicianNpi: ownershipPuf.physician_npi,
@@ -186,7 +191,7 @@ export async function ingestSourceRow(input: IngestRowInput): Promise<IngestRowR
         valueOfInterest: Number(ownershipPuf.value_of_interest) || undefined,
         isReportable: input.analysis.isReportable,
         rulesEngineVersion: RULES_ENGINE_VERSION,
-        ruleInputSnapshot: ruleSnapshot,
+        ruleInputSnapshot: toInputJson(ruleSnapshot),
       },
     })
     pufLineId = line.id
@@ -197,7 +202,7 @@ export async function ingestSourceRow(input: IngestRowInput): Promise<IngestRowR
     const line = await prisma.cmsGeneralPaymentLine.create({
       data: {
         spendEventId: spendEvent.id,
-        pufFields: generalPuf,
+        pufFields: toInputJson(generalPuf),
         recordId: generalPuf.record_id || spendEvent.id,
         programYear,
         coveredRecipientNpi: generalPuf.covered_recipient_npi,
@@ -208,7 +213,7 @@ export async function ingestSourceRow(input: IngestRowInput): Promise<IngestRowR
         changeType: generalPuf.change_type || 'N',
         isReportable: input.analysis.isReportable,
         rulesEngineVersion: RULES_ENGINE_VERSION,
-        ruleInputSnapshot: ruleSnapshot,
+        ruleInputSnapshot: toInputJson(ruleSnapshot),
       },
     })
     pufLineId = line.id

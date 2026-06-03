@@ -265,6 +265,14 @@ export class DataAnalysisService {
     // Convert to CMSRecord format for glossary service
     const cmsRecord: CMSRecord = {
       id: record.recordId,
+      recordId: record.recordId,
+      coveredRecipientId: record.coveredRecipientNPI || record.recordId,
+      coveredRecipientName: this.getRecipientName(record),
+      coveredRecipientType: record.coveredRecipientType || 'Physician',
+      totalAmountOfPaymentUsdollars: record.totalAmountOfPaymentUSDollars || 0,
+      isReportable: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
       amount: record.totalAmountOfPaymentUSDollars || 0,
       description: record.natureOfPaymentOrTransferOfValue || '',
       providerName: this.getRecipientName(record),
@@ -523,17 +531,18 @@ export class DataAnalysisService {
 
   private identifyReportabilityPatterns() {
     return {
-      clearlyReportable: this.records.filter(r => 
-        this.analysisResults.find(ar => ar.recordId === r.recordId)?.isReportable === true &&
-        this.analysisResults.find(ar => ar.recordId === r.recordId)?.confidence > 0.8
-      ),
-      clearlyNonReportable: this.records.filter(r => 
-        this.analysisResults.find(ar => ar.recordId === r.recordId)?.isReportable === false &&
-        this.analysisResults.find(ar => ar.recordId === r.recordId)?.confidence > 0.8
-      ),
-      greyArea: this.records.filter(r => 
-        this.analysisResults.find(ar => ar.recordId === r.recordId)?.confidence < 0.7
-      ),
+      clearlyReportable: this.records.filter(r => {
+        const ar = this.analysisResults.find(a => a.recordId === r.recordId)
+        return ar?.isReportable === true && (ar?.confidence ?? 0) > 0.8
+      }),
+      clearlyNonReportable: this.records.filter(r => {
+        const ar = this.analysisResults.find(a => a.recordId === r.recordId)
+        return ar?.isReportable === false && (ar?.confidence ?? 0) > 0.8
+      }),
+      greyArea: this.records.filter(r => {
+        const ar = this.analysisResults.find(a => a.recordId === r.recordId)
+        return (ar?.confidence ?? 0) < 0.7
+      }),
       disputedRecords: this.records.filter(r => r.disputeStatusForPublication === 'Yes')
     }
   }

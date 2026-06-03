@@ -61,7 +61,7 @@ export default function ProcessingVolumeChart({ data, title = "Daily Processing 
           color: 'rgb(107, 114, 128)', // Gray-500
           font: {
             size: 12,
-            weight: '500' as const,
+            weight: 500,
           },
         },
       },
@@ -98,7 +98,7 @@ export default function ProcessingVolumeChart({ data, title = "Daily Processing 
           color: 'rgb(107, 114, 128)',
           font: {
             size: 12,
-            weight: '500' as const,
+            weight: 500,
           },
         },
         grid: {
@@ -117,7 +117,7 @@ export default function ProcessingVolumeChart({ data, title = "Daily Processing 
           color: 'rgb(107, 114, 128)',
           font: {
             size: 12,
-            weight: '500' as const,
+            weight: 500,
           },
         },
         grid: {
@@ -138,7 +138,7 @@ export default function ProcessingVolumeChart({ data, title = "Daily Processing 
 
   return (
     <div className="w-full h-80">
-      <Line data={chartData} options={options} />
+      <Line data={chartData} options={options as object} />
     </div>
   )
 }

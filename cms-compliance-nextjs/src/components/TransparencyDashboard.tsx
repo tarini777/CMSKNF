@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getActiveProgramYear, getMilestoneStatus } from '@/lib/submission-calendar'
+import { getActiveProgramYear, getMilestoneStatus, type SubmissionMilestone } from '@/lib/submission-calendar'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -145,7 +145,7 @@ export default function TransparencyDashboard() {
             <p className="text-sm text-muted-foreground py-4">Loading…</p>
           ) : (
             milestones.map((m) => {
-              const status = getMilestoneStatus(m)
+              const status = getMilestoneStatus(m as SubmissionMilestone)
               return (
                 <div
                   key={m.id}

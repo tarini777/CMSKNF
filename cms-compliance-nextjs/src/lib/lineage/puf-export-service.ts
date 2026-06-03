@@ -2,8 +2,10 @@ import { prisma } from '@/lib/prisma'
 import {
   CMS_GENERAL_PUF_HEADERS,
   CMS_OWNERSHIP_PUF_HEADERS,
+  CMS_RESEARCH_PUF_HEADERS,
   type CmsGeneralPufFields,
   type CmsOwnershipPufFields,
+  type CmsResearchPufFields,
 } from '@/types/cms-puf'
 
 function escapeCsv(value: string | number | null | undefined): string {
@@ -14,8 +16,8 @@ function escapeCsv(value: string | number | null | undefined): string {
   return s
 }
 
-function pufToRow<T extends Record<string, unknown>>(fields: T, headers: (keyof T)[]): string {
-  return headers.map((h) => escapeCsv(fields[h] as string | number | undefined)).join(',')
+function pufToRow<T extends Record<string, unknown>>(fields: T, headers: (keyof T | string)[]): string {
+  return headers.map((h) => escapeCsv(fields[h as keyof T] as string | number | undefined)).join(',')
 }
 
 function headerLabels(keys: string[]): string {
@@ -30,7 +32,7 @@ export async function generateFullGeneralPufCsv(programYear?: string): Promise<s
   })
 
   const rows = lines.map((line) =>
-    pufToRow(line.pufFields as CmsGeneralPufFields, CMS_GENERAL_PUF_HEADERS)
+    pufToRow(line.pufFields as Record<string, unknown>, CMS_GENERAL_PUF_HEADERS)
   )
 
   return [headerLabels(CMS_GENERAL_PUF_HEADERS), ...rows].join('\n')
@@ -44,21 +46,15 @@ export async function generateFullResearchPufCsv(programYear?: string): Promise<
   })
 
   if (lines.length === 0) {
-    return 'RECORD_ID,PROGRAM_YEAR,TOTAL_AMOUNT,NAME_OF_STUDY,CLINICALTRIALS_GOV_IDENTIFIER'
+    return headerLabels(CMS_RESEARCH_PUF_HEADERS)
   }
-
-  const allKeys = new Set<string>()
-  for (const line of lines) {
-    Object.keys(line.pufFields as object).forEach((k) => allKeys.add(k))
-  }
-  const headers = [...allKeys].sort()
 
   const rows = lines.map((line) => {
-    const fields = line.pufFields as Record<string, unknown>
-    return headers.map((h) => escapeCsv(fields[h] as string | number | undefined)).join(',')
+    const fields = line.pufFields as CmsResearchPufFields
+    return pufToRow(fields as Record<string, unknown>, CMS_RESEARCH_PUF_HEADERS)
   })
 
-  return [headerLabels(headers), ...rows].join('\n')
+  return [headerLabels(CMS_RESEARCH_PUF_HEADERS), ...rows].join('\n')
 }
 
 export async function generateFullOwnershipPufCsv(programYear?: string): Promise<string> {
@@ -69,7 +65,7 @@ export async function generateFullOwnershipPufCsv(programYear?: string): Promise
   })
 
   const rows = lines.map((line) =>
-    pufToRow(line.pufFields as CmsOwnershipPufFields, CMS_OWNERSHIP_PUF_HEADERS)
+    pufToRow(line.pufFields as Record<string, unknown>, CMS_OWNERSHIP_PUF_HEADERS)
   )
 
   return [headerLabels(CMS_OWNERSHIP_PUF_HEADERS), ...rows].join('\n')
@@ -91,6 +87,7 @@ export async function getPufExportStats(programYear?: string) {
     ownershipReportable: ownership,
     cmsRecordsWithLineage: linkedRecords,
     generalFieldCount: CMS_GENERAL_PUF_HEADERS.length,
+    researchFieldCount: CMS_RESEARCH_PUF_HEADERS.length,
     ownershipFieldCount: CMS_OWNERSHIP_PUF_HEADERS.length,
   }
 }

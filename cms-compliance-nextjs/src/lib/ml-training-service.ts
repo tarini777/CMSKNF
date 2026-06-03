@@ -81,7 +81,7 @@ export class MLTrainingService {
         throw new Error('Insufficient training data. Need at least 100 records.')
       }
 
-      console.log(`📊 Training data prepared: ${trainingData.records.length} records, ${trainingData.featureCount} features`)
+      console.log(`📊 Training data prepared: ${trainingData.records.length} records, ${trainingData.metadata.featureCount} features`)
 
       // Train the model
       await mlService.trainAnomalyDetectionModel(trainingData.records)
@@ -112,7 +112,7 @@ export class MLTrainingService {
         dataQuality: {
           trainingSamples: trainingData.records.length,
           validationSamples: Math.floor(trainingData.records.length * 0.2),
-          featureCount: trainingData.featureCount
+          featureCount: trainingData.metadata.featureCount
         },
         isActive: true
       }

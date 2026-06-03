@@ -8,6 +8,8 @@ import {
   resolvePersonaId,
 } from '@/config/personas'
 
+export type VisiblePersonaTab = (typeof DASHBOARD_TABS)[number] & { access: PersonaAccess }
+
 export function tabAccessLevel(personaId: string, tabId: DashboardTab): PersonaAccess | null {
   const persona = PERSONAS[resolvePersonaId(personaId)]
   if (!persona) return null
@@ -21,9 +23,9 @@ export function canAccessTab(personaId: string, tabId: DashboardTab): boolean {
   return tabAccessLevel(personaId, tabId) != null
 }
 
-export function getVisibleTabs(personaId: string) {
+export function getVisibleTabs(personaId: string): VisiblePersonaTab[] {
   const persona = PERSONAS[resolvePersonaId(personaId)]
-  if (!persona) return DASHBOARD_TABS
+  if (!persona) return DASHBOARD_TABS.map((tab) => ({ ...tab, access: 'viewer' as PersonaAccess }))
 
   return DASHBOARD_TABS.filter((t) => canAccessTab(personaId, t.id)).map((tab) => ({
     ...tab,

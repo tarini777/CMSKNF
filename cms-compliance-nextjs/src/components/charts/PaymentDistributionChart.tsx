@@ -48,7 +48,7 @@ export default function PaymentDistributionChart({ data, title = "Payment Distri
           color: 'rgb(107, 114, 128)', // Gray-500
           font: {
             size: 12,
-            weight: '500' as const,
+            weight: 500,
           },
           padding: 20,
           usePointStyle: true,
@@ -89,7 +89,7 @@ export default function PaymentDistributionChart({ data, title = "Payment Distri
 
   return (
     <div className="w-full h-80">
-      <Doughnut data={chartData} options={options} />
+      <Doughnut data={chartData} options={options as object} />
     </div>
   )
 }
