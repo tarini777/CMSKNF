@@ -136,6 +136,60 @@ model CompanyRule {
   @@map("company_rules")
 }
 
+/** Per-jurisdiction reporting thresholds (CMS Sunshine, Loi Bertrand, etc.). */
+model JurisdictionRule {
+  id                   String   @id @default(cuid())
+  jurisdictionCode     String
+  jurisdictionName     String
+  perPaymentMin        Float?
+  aggregateAnnualMin   Float?
+  currency             String   @default("USD")
+  fmvTolerancePercent  Float    @default(10)
+  regulatoryBasis      String?
+  effectiveDate        String
+  expirationDate       String?
+  isActive             Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@unique([jurisdictionCode, effectiveDate])
+  @@index([jurisdictionCode, isActive])
+  @@map("jurisdiction_rules")
+}
+
+/** FMV benchmarks synced from CLM / fmv_engine connector. */
+model FmvRate {
+  id             String   @id @default(cuid())
+  natureKey      String
+  natureLabel    String
+  specialtyTier  String   @default("default")
+  rateUsd        Float
+  unit           String   @default("event")
+  sourceKey      String   @default("fmv_engine")
+  effectiveDate  String
+  expirationDate String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([natureKey, specialtyTier, effectiveDate])
+  @@index([isActive, natureKey])
+  @@map("fmv_rates")
+}
+
+/** Specialty tier multipliers applied to base FMV rates. */
+model FmvSpecialtyTier {
+  id           String   @id @default(cuid())
+  tierKey      String   @unique
+  multiplier   Float    @default(1)
+  displayLabel String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("fmv_specialty_tiers")
+}
+
 model ReviewSession {
   id          String   @id @default(cuid())
   sessionId   String   @unique

@@ -16,7 +16,7 @@ import { buildGlossaryMatchesForRecord } from '@/lib/rule-citation-service'
 import { describeRecipientLocation, isOutsideUnitedStates, isUnitedStatesCountry, isValidUsStateOrTerritory } from '@/lib/geographic-rules'
 import { internationalComplianceService } from '@/lib/international-compliance-service'
 import { amountMeetsEurThreshold } from '@/lib/currency-service'
-import { US_PER_PAYMENT_MIN } from '@/lib/aggregate-threshold-service'
+import { getJurisdictionThresholds } from '@/lib/jurisdiction-config-service'
 
 export interface TransparencyAnalysis extends ReportabilityAnalysis {
   cmsReportCategory: CmsReportCategory
@@ -118,37 +118,45 @@ export async function runTransparencyAnalysis(record: CMSRecord): Promise<Transp
   const natureOfPayment = (record.natureOfPaymentOrTransferOfValue || '').toLowerCase()
   const location = describeRecipientLocation(record)
 
-  // 5. Per-payment threshold (USD $10)
-  if (amount < US_PER_PAYMENT_MIN) {
+  const usThresholds = await getJurisdictionThresholds('US')
+  const perPaymentMin = usThresholds.perPaymentMin
+  const aggregateAnnualMin = usThresholds.aggregateAnnualMin
+
+  // 5. Per-payment threshold (jurisdiction config)
+  if (amount < perPaymentMin) {
     applicableRules.push('rule_amount_threshold_10')
     reasoning.push(
-      `Payment ($${amount.toFixed(2)} USD equivalent) is below $${US_PER_PAYMENT_MIN} per-payment threshold — pending annual aggregate check`
+      `Payment ($${amount.toFixed(2)} USD equivalent) is below $${perPaymentMin} per-payment threshold — pending annual aggregate check`
     )
     aggregateStatus = 'pending'
     isReportable = false
     confidence = 0.7
-    recommendations.push('Run aggregate recalculation — reportable if recipient annual sub-$10 total ≥ $100')
+    recommendations.push(
+      `Run aggregate recalculation — reportable if recipient annual sub-$${perPaymentMin} total ≥ $${aggregateAnnualMin}`
+    )
   } else {
-    reasoning.push(`Payment ($${amount.toFixed(2)} USD equivalent) meets $${US_PER_PAYMENT_MIN} minimum threshold`)
+    reasoning.push(`Payment ($${amount.toFixed(2)} USD equivalent) meets $${perPaymentMin} minimum threshold`)
     isReportable = true
     confidence = Math.max(confidence, 0.82)
   }
 
-  // 6. France Loi Bertrand €10 (recipient in France)
+  // 6. France Loi Bertrand (recipient in France)
   const recipientCountry = (record.recipientCountry || '').toLowerCase()
   if (recipientCountry.includes('france') || recipientCountry === 'fr') {
+    const frThresholds = await getJurisdictionThresholds('FR')
     applicableRules.push('intl_fr_loi_bertrand_10_eur')
-    if (!amountMeetsEurThreshold(amount, 10)) {
-      reasoning.push('Below France Loi Bertrand €10 equivalent threshold')
+    const frMin = frThresholds.perPaymentMin
+    if (!amountMeetsEurThreshold(amount, frMin)) {
+      reasoning.push(`Below France Loi Bertrand €${frMin} equivalent threshold`)
       warnings.push('France mandatory disclosure may still require agreement registration on Transparence Santé')
     } else {
-      reasoning.push('Meets France Loi Bertrand €10 benefit threshold')
+      reasoning.push(`Meets France Loi Bertrand €${frMin} benefit threshold`)
       isReportable = true
     }
   }
 
   // Geographic rules (existing logic)
-  if (location.isForeignRecipient && amount >= US_PER_PAYMENT_MIN) {
+  if (location.isForeignRecipient && amount >= perPaymentMin) {
     applicableRules.push('rule_foreign_recipient_reportable', 'rule_foreign_recipient_enhanced_review')
     reasoning.push(`Foreign recipient (${record.recipientCountry}) — reportable under CMS Open Payments`)
     isReportable = true
@@ -169,22 +177,24 @@ export async function runTransparencyAnalysis(record: CMSRecord): Promise<Transp
   }
 
   // Payment type reportability
-  if (natureOfPayment.includes('consulting') && amount >= US_PER_PAYMENT_MIN) {
+  if (natureOfPayment.includes('consulting') && amount >= perPaymentMin) {
     applicableRules.push('rule_consulting_payment')
     isReportable = true
   }
-  if (natureOfPayment.includes('research') && amount >= US_PER_PAYMENT_MIN) {
+  if (natureOfPayment.includes('research') && amount >= perPaymentMin) {
     applicableRules.push('rule_research_payment')
     isReportable = true
   }
 
-  if (!isReportable && amount >= US_PER_PAYMENT_MIN) {
+  if (!isReportable && amount >= perPaymentMin) {
     isReportable = true
     reasoning.push('Payment exceeds threshold with no exemption')
   }
 
-  if (amount >= US_PER_PAYMENT_MIN && amount < 100) {
-    warnings.push('Above per-payment threshold; confirm annual aggregate for other sub-$10 payments to same recipient')
+  if (amount >= perPaymentMin && amount < aggregateAnnualMin) {
+    warnings.push(
+      `Above per-payment threshold; confirm annual aggregate for other sub-$${perPaymentMin} payments to same recipient`
+    )
   }
 
   const jurisdictionAnalysis = internationalComplianceService.analyzeMultiJurisdiction(record)

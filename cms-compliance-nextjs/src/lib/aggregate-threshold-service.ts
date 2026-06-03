@@ -1,9 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { CMSRecord } from '@/types/cms'
 import { AggregateStatus } from '@/lib/transparency-exemptions'
-
-const US_PER_PAYMENT_MIN = 10
-const US_ANNUAL_AGGREGATE_MIN = 100
+import { getJurisdictionThresholds } from '@/lib/jurisdiction-config-service'
 
 function programYearFromRecord(record: CMSRecord): string {
   if (record.programYear) return record.programYear
@@ -21,12 +19,18 @@ export interface AggregateResult {
   recordCount: number
   aggregateReportable: boolean
   updatedRecordIds: string[]
+  perPaymentMin: number
+  aggregateAnnualMin: number
 }
 
 export async function computeRecipientAggregate(
   coveredRecipientId: string,
-  programYear: string
+  programYear: string,
+  jurisdictionCode = 'US'
 ): Promise<AggregateResult> {
+  const thresholds = await getJurisdictionThresholds(jurisdictionCode)
+  const { perPaymentMin, aggregateAnnualMin } = thresholds
+
   const records = await prisma.cMSRecord.findMany({
     where: {
       coveredRecipientId,
@@ -34,9 +38,9 @@ export async function computeRecipientAggregate(
     },
   })
 
-  const subThreshold = records.filter((r) => r.totalAmountOfPaymentUsdollars < US_PER_PAYMENT_MIN)
+  const subThreshold = records.filter((r) => r.totalAmountOfPaymentUsdollars < perPaymentMin)
   const subThresholdTotal = subThreshold.reduce((sum, r) => sum + r.totalAmountOfPaymentUsdollars, 0)
-  const aggregateReportable = subThresholdTotal >= US_ANNUAL_AGGREGATE_MIN
+  const aggregateReportable = subThresholdTotal >= aggregateAnnualMin
 
   const updatedRecordIds: string[] = []
   const aggregateStatus: AggregateStatus = aggregateReportable ? 'reportable' : 'non_reportable'
@@ -49,8 +53,8 @@ export async function computeRecipientAggregate(
         aggregateStatus,
         isReportable: aggregateReportable,
         reason: aggregateReportable
-          ? `Annual aggregate $${subThresholdTotal.toFixed(2)} exceeds $${US_ANNUAL_AGGREGATE_MIN} threshold — sub-$${US_PER_PAYMENT_MIN} payments now reportable (rule_annual_aggregate_threshold_100)`
-          : `Annual aggregate $${subThresholdTotal.toFixed(2)} below $${US_ANNUAL_AGGREGATE_MIN} — sub-$${US_PER_PAYMENT_MIN} payments non-reportable`,
+          ? `Annual aggregate $${subThresholdTotal.toFixed(2)} exceeds $${aggregateAnnualMin} ${thresholds.currency} threshold — sub-$${perPaymentMin} payments now reportable (rule_annual_aggregate_threshold_100)`
+          : `Annual aggregate $${subThresholdTotal.toFixed(2)} below $${aggregateAnnualMin} — sub-$${perPaymentMin} payments non-reportable`,
         appliedRules: Array.isArray(record.appliedRules)
           ? [...(record.appliedRules as string[]), 'rule_annual_aggregate_threshold_100']
           : ['rule_annual_aggregate_threshold_100'],
@@ -66,6 +70,8 @@ export async function computeRecipientAggregate(
     recordCount: subThreshold.length,
     aggregateReportable,
     updatedRecordIds,
+    perPaymentMin,
+    aggregateAnnualMin,
   }
 }
 
@@ -102,5 +108,3 @@ export async function recalculateAllAggregates(programYear?: string): Promise<Ag
   }
   return results
 }
-
-export { US_PER_PAYMENT_MIN, US_ANNUAL_AGGREGATE_MIN }

@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Record not found' }, { status: 404 })
     }
 
-    const analysis = analyzeFmv(record)
+    const analysis = await analyzeFmv(record)
     return NextResponse.json({ success: true, data: analysis })
   } catch (error) {
     console.error('FMV analyze error:', error)

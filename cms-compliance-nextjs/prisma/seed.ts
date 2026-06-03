@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client'
 import { hashPassword } from '../src/lib/auth'
 import { ensureDefaultDataSources } from '../src/lib/lineage/hcp-master-service'
 import { seedDemoWorkflows } from './seed-demo-workflows'
+import { seedComplianceConfig } from './seed-compliance-config'
 
 const prisma = new PrismaClient()
 
@@ -110,8 +111,9 @@ async function main() {
   }
 
   await ensureDefaultDataSources()
+  await seedComplianceConfig(prisma)
   await seedDemoWorkflows(prisma)
-  console.log('Seed complete: users, company rules, data sources, and demo workflows ready')
+  console.log('Seed complete: users, rules, config tables, data sources, and demo workflows ready')
 }
 
 main()

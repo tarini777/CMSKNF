@@ -1,7 +1,4 @@
-/**
- * NPPES NPI Registry verification (REQ-007).
- * https://npiregistry.cms.hhs.gov/api/
- */
+import { isDemoMode } from '@/lib/app-config'
 
 export interface NppesProvider {
   npi: string
@@ -126,7 +123,7 @@ export async function verifyNpi(
     /* fall through to demo */
   }
 
-  if (!provider && DEMO_NPPES[cleaned]) {
+  if (!provider && isDemoMode() && DEMO_NPPES[cleaned]) {
     provider = DEMO_NPPES[cleaned]
     source = 'demo_fallback'
   }
