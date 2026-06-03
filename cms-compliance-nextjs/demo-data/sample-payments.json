@@ -1,0 +1,83 @@
+[
+  {
+    "amount": 150000,
+    "description": "Consulting services for clinical trial design and regulatory strategy",
+    "providerName": "Dr. Sarah Johnson",
+    "date": "2024-08-15",
+    "status": "Valid",
+    "category": "Consulting Fee",
+    "natureOfPayment": "Consulting Fee",
+    "recipientType": "Physician",
+    "manufacturerName": "Gilead Sciences",
+    "specialty": "Cardiology",
+    "state": "CA",
+    "disputeStatus": "None",
+    "contextualInformation": "High-value consulting for Phase III trial design"
+  },
+  {
+    "amount": 75000,
+    "description": "Research funding for Alzheimer's disease study",
+    "providerName": "Dr. Michael Chen",
+    "date": "2024-07-20",
+    "status": "Valid",
+    "category": "Research",
+    "natureOfPayment": "Research",
+    "recipientType": "Physician",
+    "manufacturerName": "Gilead Sciences",
+    "specialty": "Neurology",
+    "state": "NY",
+    "disputeStatus": "None",
+    "contextualInformation": "Principal Investigator for NCT04567890",
+    "nctId": "NCT04567890"
+  },
+  {
+    "amount": 8.5,
+    "description": "Educational materials and lunch",
+    "providerName": "Dr. Emily Rodriguez",
+    "date": "2024-08-10",
+    "status": "Valid",
+    "category": "Food and Beverage",
+    "natureOfPayment": "Food and Beverage",
+    "recipientType": "Physician",
+    "manufacturerName": "Gilead Sciences",
+    "specialty": "Oncology",
+    "state": "TX",
+    "disputeStatus": "None",
+    "contextualInformation": "Educational lunch meeting"
+  },
+  {
+    "amount": 25000,
+    "description": "Speaking fees for medical education program",
+    "providerName": "Dr. James Wilson",
+    "date": "2024-06-15",
+    "status": "Disputed",
+    "category": "Speaking Fee",
+    "natureOfPayment": "Compensation for serving as faculty or as a speaker for medical education program",
+    "recipientType": "Physician",
+    "manufacturerName": "Gilead Sciences",
+    "specialty": "Internal Medicine",
+    "state": "FL",
+    "disputeStatus": "Under Review",
+    "contextualInformation": "Disputed by recipient - claims no speaking engagement occurred"
+  },
+  {
+    "amount": 150000,
+    "description": "Consulting services for clinical trial design and regulatory strategy",
+    "providerName": "Dr. Sarah Johnson",
+    "date": "2024-08-15",
+    "status": "Anomaly",
+    "category": "Consulting Fee",
+    "natureOfPayment": "Consulting Fee",
+    "recipientType": "Physician",
+    "manufacturerName": "Gilead Sciences",
+    "specialty": "Cardiology",
+    "state": "CA",
+    "disputeStatus": "None",
+    "contextualInformation": "Potential duplicate of payment #001",
+    "fraudIndicators": [
+      "Duplicate Payment",
+      "Same Amount",
+      "Same Date"
+    ]
+  }
+]

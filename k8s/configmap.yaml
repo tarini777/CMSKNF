@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cmsknf-config
+  namespace: cmsknf
+data:
+  POSTGRES_DB: "cmsknf"
+  POSTGRES_USER: "cmsknf_user"
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
+  JWT_SECRET_KEY: "your-jwt-secret-key-change-in-production"
+  ENCRYPTION_KEY: "your-encryption-key-change-in-production"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cmsknf-secrets
+  namespace: cmsknf
+type: Opaque
+data:
+  POSTGRES_PASSWORD: cG9zdGdyZXNfcGFzc3dvcmQ=  # base64 encoded password
+  REDIS_PASSWORD: cmVkaXNfcGFzc3dvcmQ=  # base64 encoded password
+  CMS_API_KEY: YWJjZGVmZ2hpams=  # base64 encoded API key
+  OPENAI_API_KEY: b3BlbmFpX2FwaV9rZXk=  # base64 encoded API key

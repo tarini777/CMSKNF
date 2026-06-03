@@ -1,0 +1,11 @@
+{
+  "totalRecords": 1272012,
+  "complianceRate": 98.7,
+  "anomaliesDetected": 23,
+  "processingVolume": 15432,
+  "fraudDetectionAccuracy": 94.2,
+  "manualReviewReduction": 67,
+  "systemUptime": 99.9,
+  "averageProcessingTime": 2.3,
+  "lastUpdated": "2025-09-07T18:45:51.636Z"
+}

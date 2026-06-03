@@ -1,0 +1,225 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// CMS Compliance Data Models
+model CMSRecord {
+  id          String   @id @default(cuid())
+  recordId    String   @unique
+  coveredRecipientId String
+  coveredRecipientName String
+  coveredRecipientType String
+  teachingHospitalId String?
+  teachingHospitalName String?
+  physicianProfileId String?
+  physicianFirstName String?
+  physicianMiddleName String?
+  physicianLastName String?
+  physicianNameSuffix String?
+  recipientPrimaryBusinessStreetAddressLine1 String?
+  recipientPrimaryBusinessStreetAddressLine2 String?
+  recipientCity String?
+  recipientState String?
+  recipientZipCode String?
+  recipientCountry String?
+  recipientProvince String?
+  recipientPostalCode String?
+  physicianPrimaryType String?
+  physicianSpecialty String?
+  physicianLicenseStateCode1 String?
+  physicianLicenseStateCode2 String?
+  physicianLicenseStateCode3 String?
+  physicianLicenseStateCode4 String?
+  physicianLicenseStateCode5 String?
+  submittingApplicableManufacturerOrApplicableGpoName String?
+  applicableManufacturerOrApplicableGpoMakingPaymentId String?
+  applicableManufacturerOrApplicableGpoMakingPaymentName String?
+  applicableManufacturerOrApplicableGpoMakingPaymentState String?
+  applicableManufacturerOrApplicableGpoMakingPaymentCountry String?
+  totalAmountOfPaymentUsdollars Float
+  dateOfPayment String?
+  numberOfPaymentsIncludedInTotalAmount String?
+  formOfPaymentOrTransferOfValue String?
+  natureOfPaymentOrTransferOfValue String?
+  cityOfTravel String?
+  stateOfTravel String?
+  countryOfTravel String?
+  physicianOwnershipIndicator String?
+  thirdPartyPaymentRecipientIndicator String?
+  nameOfThirdPartyEntityReceivingPaymentOrTransferOfValue String?
+  charityIndicator String?
+  thirdPartyEqualsCoveredRecipientIndicator String?
+  contextualInformation String?
+  delayInPublicationIndicator String?
+  disputeStatusForPublication String?
+  productIndicator String?
+  nameOfAssociatedCoveredDrugOrBiological1 String?
+  nameOfAssociatedCoveredDrugOrBiological2 String?
+  nameOfAssociatedCoveredDrugOrBiological3 String?
+  nameOfAssociatedCoveredDrugOrBiological4 String?
+  nameOfAssociatedCoveredDrugOrBiological5 String?
+  ndcOfAssociatedCoveredDrugOrBiological1 String?
+  ndcOfAssociatedCoveredDrugOrBiological2 String?
+  ndcOfAssociatedCoveredDrugOrBiological3 String?
+  ndcOfAssociatedCoveredDrugOrBiological4 String?
+  ndcOfAssociatedCoveredDrugOrBiological5 String?
+  nameOfAssociatedCoveredDeviceOrMedicalSupply1 String?
+  nameOfAssociatedCoveredDeviceOrMedicalSupply2 String?
+  nameOfAssociatedCoveredDeviceOrMedicalSupply3 String?
+  nameOfAssociatedCoveredDeviceOrMedicalSupply4 String?
+  nameOfAssociatedCoveredDeviceOrMedicalSupply5 String?
+  programYear String?
+  paymentPublicationDate String?
+  
+  // Processing fields
+  isReportable Boolean @default(false)
+  humanDecision String? // 'approve', 'reject', 'pending'
+  humanReason String?
+  decisionTime DateTime?
+  finalReportable Boolean?
+  appliedRules Json?
+  reason String?
+
+  // COM-TRANSP-001 transparency fields
+  cmsReportCategory String? // general | research | ownership
+  paymentCurrency String? @default("USD")
+  exchangeRate Float? @default(1)
+  reportingCurrencyValue Float?
+  consentForDisclosure Boolean?
+  disclosureType String? // individual | aggregate
+  aggregateStatus String? // not_applicable | pending | reportable | non_reportable
+  recipientAnnualAggregate Float?
+  disputeWorkflowStatus String? @default("none") // none | under_review | disputed | corrected | resolved
+  disputeOpenedAt DateTime?
+  disputeResolvedAt DateTime?
+  disputeNotes String?
+  
+  // Audit fields
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  reviewSessionId String?
+  reviewSession ReviewSession? @relation(fields: [reviewSessionId], references: [id])
+  
+  @@map("cms_records")
+}
+
+model CompanyRule {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  ruleType    String   // 'threshold', 'exclusion', 'inclusion', 'validation'
+  conditions  Json     // Rule conditions and logic
+  isActive    Boolean  @default(true)
+  priority    Int      @default(0)
+  createdBy   String?
+  updatedBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("company_rules")
+}
+
+model ReviewSession {
+  id          String   @id @default(cuid())
+  sessionId   String   @unique
+  filename    String
+  originalFilename String
+  filePath    String?  // Path to stored CSV file
+  fileSize    Int?     // File size in bytes
+  fileHash    String?  // SHA-256 hash for integrity verification
+  uploadTime  DateTime @default(now())
+  totalRecords Int
+  processedRecords Int @default(0)
+  reportableCount Int @default(0)
+  nonReportableCount Int @default(0)
+  errorCount Int @default(0)
+  status      String   @default("pending_review") // 'pending_review', 'in_review', 'completed'
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  records     CMSRecord[]
+  
+  @@map("review_sessions")
+}
+
+model DataUpload {
+  id          String   @id @default(cuid())
+  filename    String
+  originalFilename String
+  filePath    String?  // Path to stored CSV file
+  fileSize    Int
+  fileHash    String?  // SHA-256 hash for integrity verification
+  totalRecords Int
+  processedRecords Int @default(0)
+  reportableCount Int @default(0)
+  nonReportableCount Int @default(0)
+  errorCount Int @default(0)
+  status      String   @default("processing") // 'processing', 'completed', 'failed'
+  validationSummary Json?
+  uploadedBy  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("data_uploads")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String   // 'create', 'update', 'delete', 'approve', 'reject'
+  entityType  String   // 'record', 'rule', 'session'
+  entityId    String
+  oldValues   Json?
+  newValues   Json?
+  reason      String?
+  performedBy String?
+  performedAt DateTime @default(now())
+  
+  @@map("audit_logs")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String
+  passwordHash String?
+  role        String   // 'admin', 'compliance_officer', 'data_analyst', 'executive'
+  isActive    Boolean  @default(true)
+  lastLogin   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("users")
+}
+
+model StoredFile {
+  id          String   @id @default(cuid())
+  filename    String
+  originalFilename String
+  filePath    String   @unique
+  fileSize    Int
+  fileHash    String   @unique
+  mimeType    String   @default("text/csv")
+  uploadTime  DateTime @default(now())
+  lastAccessed DateTime?
+  accessCount Int      @default(0)
+  isActive    Boolean  @default(true)
+  retentionDate DateTime? // When file should be deleted
+  uploadedBy  String?
+  sessionId   String?  // Link to review session
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("stored_files")
+}

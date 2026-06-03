@@ -1,0 +1,11 @@
+covered_recipient_id,covered_recipient_name,covered_recipient_type,total_amount_of_payment_usdollars,date_of_payment,nature_of_payment_or_transfer_of_value,form_of_payment_or_transfer_of_value
+DOC001,Dr. John Smith,Physician,150.00,2024-01-15,Consulting Fee,Cash or cash equivalent
+DOC002,Dr. Jane Doe,Physician,25.00,2024-01-16,Food and Beverage,Cash or cash equivalent
+DOC003,Dr. Michael Johnson,Physician,500.00,2024-01-17,Speaking Fee,Cash or cash equivalent
+DOC004,Dr. Sarah Wilson,Physician,8.50,2024-01-18,Educational Materials,Cash or cash equivalent
+DOC005,Dr. Robert Brown,Physician,200.00,2024-01-19,Consulting Fee,Cash or cash equivalent
+DOC006,Dr. Lisa Davis,Physician,45.00,2024-01-20,Food and Beverage,Cash or cash equivalent
+DOC007,Dr. David Miller,Physician,75.00,2024-01-21,Travel and Lodging,Cash or cash equivalent
+DOC008,Dr. Jennifer Garcia,Physician,300.00,2024-01-22,Speaking Fee,Cash or cash equivalent
+DOC009,Dr. Christopher Martinez,Physician,12.00,2024-01-23,Educational Materials,Cash or cash equivalent
+DOC010,Dr. Amanda Rodriguez,Physician,180.00,2024-01-24,Consulting Fee,Cash or cash equivalent

@@ -1,0 +1,43 @@
+{
+  "name": "Dr. Sarah Johnson",
+  "specialty": "Cardiology",
+  "totalPayments": 125000,
+  "paymentSources": [
+    {
+      "manufacturer": "Gilead Sciences",
+      "amount": 150000,
+      "type": "Consulting Fee"
+    },
+    {
+      "manufacturer": "Pfizer",
+      "amount": 25000,
+      "type": "Research"
+    },
+    {
+      "manufacturer": "Merck",
+      "amount": 15000,
+      "type": "Education"
+    }
+  ],
+  "paymentHistory": [
+    {
+      "year": "2021",
+      "amount": 45000
+    },
+    {
+      "year": "2022",
+      "amount": 52000
+    },
+    {
+      "year": "2023",
+      "amount": 68000
+    },
+    {
+      "year": "2024",
+      "amount": 125000
+    }
+  ],
+  "riskLevel": "Medium",
+  "fraudIndicators": [],
+  "complianceStatus": "Compliant"
+}

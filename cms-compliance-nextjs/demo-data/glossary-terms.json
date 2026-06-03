@@ -1,0 +1,45 @@
+[
+  {
+    "id": "consulting_fee",
+    "term": "Consulting Fee",
+    "definition": "A payment that a company makes to a physician for advice and expertise about a medical product or treatment. Consulting fees are typically arranged with a written agreement between a company and physician based on the company's particular business needs.",
+    "category": "payment_type",
+    "reportability": "reportable",
+    "conditions": [
+      "Written agreement required",
+      "Business need justification"
+    ],
+    "examples": [
+      "Clinical trial design",
+      "Regulatory strategy",
+      "Product development"
+    ],
+    "regulatoryBasis": "42 CFR 403.904(e)(2)",
+    "lastUpdated": "2025-09-07T18:45:51.623Z",
+    "version": "1.0"
+  },
+  {
+    "id": "physician",
+    "term": "Physician",
+    "definition": "For the purposes of Open Payments, a 'physician' is any of the following types of professionals that are legally authorized by the state to practice: Doctors of Medicine or Osteopathic Medicine, Doctors of Dental Medicine or Dental Surgery, Doctors of Podiatric Medicine, Doctors of Optometry, Chiropractors.",
+    "category": "recipient_type",
+    "reportability": "reportable",
+    "conditions": [
+      "Legally authorized by state",
+      "Not a medical resident",
+      "Not a bona fide employee"
+    ],
+    "examples": [
+      "MD",
+      "DO",
+      "DDS",
+      "DMD",
+      "DPM",
+      "OD",
+      "DC"
+    ],
+    "regulatoryBasis": "42 CFR 403.902",
+    "lastUpdated": "2025-09-07T18:45:51.627Z",
+    "version": "1.0"
+  }
+]

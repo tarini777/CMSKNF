@@ -1,0 +1,20 @@
+{
+  "demoMode": true,
+  "demoDataPath": "./demo-data",
+  "sampleDataLoaded": true,
+  "apiEndpoints": {
+    "health": "http://localhost:3000/api/health",
+    "metrics": "http://localhost:3000/api/metrics",
+    "dataAnalysis": "http://localhost:3000/api/data-analysis",
+    "glossary": "http://localhost:3000/api/glossary",
+    "openPayments": "http://localhost:3000/api/open-payments"
+  },
+  "demoFeatures": {
+    "fraudDetection": true,
+    "patternAnalysis": true,
+    "riskAssessment": true,
+    "glossaryEngine": true,
+    "externalAPIs": true,
+    "openPayments": true
+  }
+}

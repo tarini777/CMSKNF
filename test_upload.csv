@@ -1,0 +1,3 @@
+covered_recipient_id,covered_recipient_name,covered_recipient_type,total_amount_of_payment_usdollars,date_of_payment,nature_of_payment_or_transfer_of_value,form_of_payment_or_transfer_of_value,charity_indicator,third_party_payment_recipient_indicator
+12345,Dr. Test Smith,Covered Recipient Physician,150.00,2024-01-15,Consulting Fee,Cash or cash equivalent,No,No
+12346,Dr. Test Doe,Covered Recipient Physician,8.50,2024-01-16,Food and Beverage,Cash or cash equivalent,No,No

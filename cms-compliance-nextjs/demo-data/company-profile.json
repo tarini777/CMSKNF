@@ -1,0 +1,41 @@
+{
+  "name": "Gilead Sciences",
+  "totalPayments": 45200000,
+  "paymentTypes": {
+    "Research": 25000000,
+    "Consulting Fee": 12000000,
+    "Education": 5000000,
+    "Food and Beverage": 2000000,
+    "Travel and Lodging": 1200000
+  },
+  "topRecipients": [
+    {
+      "name": "Dr. Sarah Johnson",
+      "amount": 150000,
+      "type": "Consulting Fee"
+    },
+    {
+      "name": "Dr. Michael Chen",
+      "amount": 75000,
+      "type": "Research"
+    },
+    {
+      "name": "Dr. Emily Rodriguez",
+      "amount": 45000,
+      "type": "Education"
+    }
+  ],
+  "geographicDistribution": {
+    "CA": 35.2,
+    "NY": 18.7,
+    "TX": 12.3,
+    "FL": 8.9,
+    "Other": 24.9
+  },
+  "yearOverYearTrend": {
+    "2021": 38000000,
+    "2022": 41000000,
+    "2023": 43500000,
+    "2024": 45200000
+  }
+}

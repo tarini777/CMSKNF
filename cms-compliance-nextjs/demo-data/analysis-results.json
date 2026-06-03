@@ -1,0 +1,28 @@
+{
+  "fraudDetection": {
+    "suspiciousAmounts": 23,
+    "unusualTiming": 15,
+    "duplicatePatterns": 8,
+    "concentrationPatterns": 12,
+    "totalFraudIndicators": 58
+  },
+  "riskAssessment": {
+    "lowRisk": 1247892,
+    "mediumRisk": 15623,
+    "highRisk": 2341,
+    "criticalRisk": 156,
+    "totalRecords": 1272012
+  },
+  "complianceMetrics": {
+    "clearlyReportable": 89.2,
+    "clearlyNonReportable": 8.1,
+    "greyArea": 2.7,
+    "totalRecords": 1272012
+  },
+  "statisticalAnalysis": {
+    "zScoreOutliers": 45,
+    "isolationForestAnomalies": 23,
+    "temporalAnomalies": 12,
+    "geographicAnomalies": 8
+  }
+}

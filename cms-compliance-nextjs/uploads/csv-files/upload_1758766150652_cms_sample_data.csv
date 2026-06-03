@@ -1,0 +1,57 @@
+covered_recipient_id,covered_recipient_name,covered_recipient_type,total_amount_of_payment_usdollars,date_of_payment,nature_of_payment_or_transfer_of_value,form_of_payment_or_transfer_of_value,charity_indicator,third_party_payment_recipient_indicator
+12345,Dr. John Smith,Covered Recipient Physician,150.00,2024-01-15,Consulting Fee,Cash or cash equivalent,No,No
+12346,Dr. Jane Doe,Covered Recipient Physician,8.50,2024-01-16,Food and Beverage,Cash or cash equivalent,No,No
+12347,Dr. Robert Johnson,Covered Recipient Physician,2500.00,2024-01-17,Speaking Fee,Cash or cash equivalent,No,No
+12348,Dr. Sarah Wilson,Covered Recipient Physician,5.00,2024-01-18,Food and Beverage,Cash or cash equivalent,No,No
+12349,Dr. Michael Brown,Covered Recipient Physician,1200.00,2024-01-19,Consulting Fee,Cash or cash equivalent,No,No
+12350,Dr. Emily Davis,Covered Recipient Physician,15.00,2024-01-20,Food and Beverage,Cash or cash equivalent,No,No
+12351,Dr. David Miller,Covered Recipient Physician,3000.00,2024-01-21,Speaking Fee,Cash or cash equivalent,No,No
+12352,Dr. Lisa Garcia,Covered Recipient Physician,2.50,2024-01-22,Food and Beverage,Cash or cash equivalent,No,No
+12353,Dr. James Rodriguez,Covered Recipient Physician,1800.00,2024-01-23,Consulting Fee,Cash or cash equivalent,No,No
+12354,Dr. Maria Martinez,Covered Recipient Physician,12.00,2024-01-24,Food and Beverage,Cash or cash equivalent,No,No
+12355,Dr. William Anderson,Covered Recipient Physician,2200.00,2024-01-25,Speaking Fee,Cash or cash equivalent,No,No
+12356,Dr. Jennifer Taylor,Covered Recipient Physician,7.00,2024-01-26,Food and Beverage,Cash or cash equivalent,No,No
+12357,Dr. Christopher Thomas,Covered Recipient Physician,950.00,2024-01-27,Consulting Fee,Cash or cash equivalent,No,No
+12358,Dr. Amanda Jackson,Covered Recipient Physician,18.00,2024-01-28,Food and Beverage,Cash or cash equivalent,No,No
+12359,Dr. Matthew White,Covered Recipient Physician,2800.00,2024-01-29,Speaking Fee,Cash or cash equivalent,No,No
+12360,Dr. Jessica Harris,Covered Recipient Physician,3.00,2024-01-30,Food and Beverage,Cash or cash equivalent,No,No
+12361,Dr. Daniel Martin,Covered Recipient Physician,1600.00,2024-01-31,Consulting Fee,Cash or cash equivalent,No,No
+12362,Dr. Ashley Thompson,Covered Recipient Physician,9.50,2024-02-01,Food and Beverage,Cash or cash equivalent,No,No
+12363,Dr. Ryan Garcia,Covered Recipient Physician,2100.00,2024-02-02,Speaking Fee,Cash or cash equivalent,No,No
+12364,Dr. Samantha Martinez,Covered Recipient Physician,4.00,2024-02-03,Food and Beverage,Cash or cash equivalent,No,No
+12365,Dr. Kevin Robinson,Covered Recipient Physician,1350.00,2024-02-04,Consulting Fee,Cash or cash equivalent,No,No
+12366,Dr. Nicole Clark,Covered Recipient Physician,11.00,2024-02-05,Food and Beverage,Cash or cash equivalent,No,No
+12367,Dr. Brandon Rodriguez,Covered Recipient Physician,2600.00,2024-02-06,Speaking Fee,Cash or cash equivalent,No,No
+12368,Dr. Stephanie Lewis,Covered Recipient Physician,6.50,2024-02-07,Food and Beverage,Cash or cash equivalent,No,No
+12369,Dr. Tyler Lee,Covered Recipient Physician,1750.00,2024-02-08,Consulting Fee,Cash or cash equivalent,No,No
+12370,Dr. Rachel Walker,Covered Recipient Physician,13.00,2024-02-09,Food and Beverage,Cash or cash equivalent,No,No
+12371,Dr. Justin Hall,Covered Recipient Physician,2400.00,2024-02-10,Speaking Fee,Cash or cash equivalent,No,No
+12372,Dr. Lauren Allen,Covered Recipient Physician,1.50,2024-02-11,Food and Beverage,Cash or cash equivalent,No,No
+12373,Dr. Nathan Young,Covered Recipient Physician,1100.00,2024-02-12,Consulting Fee,Cash or cash equivalent,No,No
+12374,Dr. Megan King,Covered Recipient Physician,16.00,2024-02-13,Food and Beverage,Cash or cash equivalent,No,No
+12375,Dr. Adam Wright,Covered Recipient Physician,2900.00,2024-02-14,Speaking Fee,Cash or cash equivalent,No,No
+12376,Dr. Kayla Lopez,Covered Recipient Physician,8.00,2024-02-15,Food and Beverage,Cash or cash equivalent,No,No
+12377,Dr. Jordan Hill,Covered Recipient Physician,1450.00,2024-02-16,Consulting Fee,Cash or cash equivalent,No,No
+12378,Dr. Brittany Scott,Covered Recipient Physician,10.50,2024-02-17,Food and Beverage,Cash or cash equivalent,No,No
+12379,Dr. Cameron Green,Covered Recipient Physician,2300.00,2024-02-18,Speaking Fee,Cash or cash equivalent,No,No
+12380,Dr. Danielle Adams,Covered Recipient Physician,5.50,2024-02-19,Food and Beverage,Cash or cash equivalent,No,No
+12381,Dr. Austin Baker,Covered Recipient Physician,1650.00,2024-02-20,Consulting Fee,Cash or cash equivalent,No,No
+12382,Dr. Courtney Nelson,Covered Recipient Physician,14.00,2024-02-21,Food and Beverage,Cash or cash equivalent,No,No
+12383,Dr. Mason Carter,Covered Recipient Physician,2700.00,2024-02-22,Speaking Fee,Cash or cash equivalent,No,No
+12384,Dr. Taylor Mitchell,Covered Recipient Physician,7.50,2024-02-23,Food and Beverage,Cash or cash equivalent,No,No
+12385,Dr. Hunter Perez,Covered Recipient Physician,1250.00,2024-02-24,Consulting Fee,Cash or cash equivalent,No,No
+12386,Dr. Morgan Roberts,Covered Recipient Physician,12.50,2024-02-25,Food and Beverage,Cash or cash equivalent,No,No
+12387,Dr. Connor Turner,Covered Recipient Physician,2500.00,2024-02-26,Speaking Fee,Cash or cash equivalent,No,No
+12388,Dr. Sydney Phillips,Covered Recipient Physician,3.50,2024-02-27,Food and Beverage,Cash or cash equivalent,No,No
+12389,Dr. Blake Campbell,Covered Recipient Physician,1900.00,2024-02-28,Consulting Fee,Cash or cash equivalent,No,No
+12390,Dr. Alexis Parker,Covered Recipient Physician,9.00,2024-02-29,Food and Beverage,Cash or cash equivalent,No,No
+12391,Dr. Cody Evans,Covered Recipient Physician,2200.00,2024-03-01,Speaking Fee,Cash or cash equivalent,No,No
+12392,Dr. Brooke Edwards,Covered Recipient Physician,6.00,2024-03-02,Food and Beverage,Cash or cash equivalent,No,No
+12393,Dr. Devin Collins,Covered Recipient Physician,1550.00,2024-03-03,Consulting Fee,Cash or cash equivalent,No,No
+12394,Dr. Paige Stewart,Covered Recipient Physician,11.50,2024-03-04,Food and Beverage,Cash or cash equivalent,No,No
+12395,Dr. Trevor Sanchez,Covered Recipient Physician,2800.00,2024-03-05,Speaking Fee,Cash or cash equivalent,No,No
+12396,Dr. Hailey Morris,Covered Recipient Physician,4.50,2024-03-06,Food and Beverage,Cash or cash equivalent,No,No
+12397,Dr. Garrett Rogers,Covered Recipient Physician,1300.00,2024-03-07,Consulting Fee,Cash or cash equivalent,No,No
+12398,Dr. Kaitlyn Reed,Covered Recipient Physician,15.50,2024-03-08,Food and Beverage,Cash or cash equivalent,No,No
+12399,Dr. Spencer Cook,Covered Recipient Physician,2400.00,2024-03-09,Speaking Fee,Cash or cash equivalent,No,No
+12400,Dr. Madison Morgan,Covered Recipient Physician,2.00,2024-03-10,Food and Beverage,Cash or cash equivalent,No,No

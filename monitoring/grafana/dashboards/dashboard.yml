@@ -1,0 +1,12 @@
+apiVersion: 1
+
+providers:
+  - name: 'Knowledge Nexus Framework'
+    orgId: 1
+    folder: 'CMS Compliance Platform'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards

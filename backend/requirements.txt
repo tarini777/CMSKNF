@@ -1,0 +1,13 @@
+# Knowledge Nexus Framework™ - Backend Dependencies
+# Simple, minimal dependencies for clean architecture
+
+# Core Framework
+Flask==2.3.3
+Flask-CORS==4.0.0
+
+# Data Processing
+pandas==2.1.4
+numpy==1.25.2
+
+# Utilities
+python-dateutil==2.8.2
