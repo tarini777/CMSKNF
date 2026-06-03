@@ -16,6 +16,9 @@ const PUBLIC_API_PREFIXES = [
   '/api/open-payments',
   '/api/glossary',
   '/api/openapi',
+  '/api/hcp-portal',
+  '/api/disclosure',
+  '/api/nppes',
 ]
 
 export async function middleware(request: NextRequest) {

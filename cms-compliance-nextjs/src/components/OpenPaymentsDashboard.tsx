@@ -226,10 +226,8 @@ export default function OpenPaymentsDashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">CMS Open Payments Repository</h2>
-          <p className="text-muted-foreground">
-            Historical pharmaceutical company payments and aggregate spend data
-          </p>
+          <h2 className="text-lg font-semibold">CMS lookup</h2>
+          <p className="text-xs text-muted-foreground">Search published payment data</p>
         </div>
         <div className="flex gap-2">
           <Button

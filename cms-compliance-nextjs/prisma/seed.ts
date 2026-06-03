@@ -1,19 +1,22 @@
 import { PrismaClient } from '@prisma/client'
 import { hashPassword } from '../src/lib/auth'
 import { ensureDefaultDataSources } from '../src/lib/lineage/hcp-master-service'
+import { seedDemoWorkflows } from './seed-demo-workflows'
 
 const prisma = new PrismaClient()
 
 async function main() {
   const adminHash = await hashPassword('admin123')
   const officerHash = await hashPassword('compliance123')
+  const analystHash = await hashPassword('analyst123')
+  const execHash = await hashPassword('exec123')
 
   await prisma.user.upsert({
     where: { email: 'admin@cms-compliance.local' },
     update: { passwordHash: adminHash },
     create: {
       email: 'admin@cms-compliance.local',
-      name: 'Platform Admin',
+      name: 'Sam Ortiz',
       role: 'admin',
       passwordHash: adminHash,
     },
@@ -24,9 +27,31 @@ async function main() {
     update: { passwordHash: officerHash },
     create: {
       email: 'compliance@cms-compliance.local',
-      name: 'Compliance Officer',
+      name: 'Maria Chen',
       role: 'compliance_officer',
       passwordHash: officerHash,
+    },
+  })
+
+  await prisma.user.upsert({
+    where: { email: 'analyst@cms-compliance.local' },
+    update: { passwordHash: analystHash },
+    create: {
+      email: 'analyst@cms-compliance.local',
+      name: 'Derek Walsh',
+      role: 'data_analyst',
+      passwordHash: analystHash,
+    },
+  })
+
+  await prisma.user.upsert({
+    where: { email: 'exec@cms-compliance.local' },
+    update: { passwordHash: execHash },
+    create: {
+      email: 'exec@cms-compliance.local',
+      name: 'Priya Mehta',
+      role: 'executive',
+      passwordHash: execHash,
     },
   })
 
@@ -85,7 +110,8 @@ async function main() {
   }
 
   await ensureDefaultDataSources()
-  console.log('Seed complete: users, company rules, and data source registry ready')
+  await seedDemoWorkflows(prisma)
+  console.log('Seed complete: users, company rules, data sources, and demo workflows ready')
 }
 
 main()

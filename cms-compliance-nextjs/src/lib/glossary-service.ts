@@ -6,6 +6,15 @@ import {
   isValidUsStateOrTerritory,
 } from '@/lib/geographic-rules'
 import { internationalComplianceService } from '@/lib/international-compliance-service'
+import {
+  buildCmsOfficialGlossaryTerms,
+  buildPlatformSupplementGlossaryTerms,
+} from '@/lib/cms-glossary-mapper'
+import {
+  CMS_GLOSSARY_LETTERS,
+  CMS_OPEN_PAYMENTS_GLOSSARY,
+  type CmsGlossaryCategory,
+} from '@/data/cms-open-payments-glossary'
 
 export interface GlossaryTerm {
   id: string
@@ -16,6 +25,11 @@ export interface GlossaryTerm {
   conditions?: string[]
   examples?: string[]
   regulatoryBasis?: string
+  /** CMS Open Payments glossary grouping from openpaymentsdata.cms.gov/about */
+  cmsCategory?: CmsGlossaryCategory
+  programYearNote?: string
+  sortLetter?: string
+  source?: 'cms_official' | 'platform'
   lastUpdated: string
   version: string
 }
@@ -76,651 +90,8 @@ export class GlossaryService {
    */
   private initializeDefaultGlossary(): void {
     this.glossaryTerms = [
-      // Official CMS Nature of Payment Categories
-      {
-        id: 'acquisitions',
-        term: 'Acquisitions',
-        definition: 'Buyout payments made to covered recipients who have ownership interest in a company that has been acquired',
-        category: 'payment_type',
-        reportability: 'reportable',
-        conditions: ['Program Year 2021+', 'Ownership interest in acquired company'],
-        examples: ['Company buyout payments', 'Acquisition-related payments'],
-        regulatoryBasis: '42 CFR 403.904(e)(2)',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'charitable_contribution',
-        term: 'Charitable Contribution',
-        definition: 'A payment or transfer of value made to an organization with tax-exempt status under the Internal Revenue Code of 1986',
-        category: 'payment_type',
-        reportability: 'reportable',
-        conditions: ['Tax-exempt organization', 'Not covered by other categories'],
-        examples: ['Donations to medical foundations', 'Charitable grants'],
-        regulatoryBasis: '42 CFR 403.904(e)(2)',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'compensation_services_other',
-        term: 'Compensation for services other than consulting, including serving as faculty or as a speaker at an event other than a continuing education program',
-        definition: 'Payments for services other than consulting, including faculty or speaker roles at non-continuing education events',
-        category: 'payment_type',
-        reportability: 'reportable',
-        conditions: ['Amount > $10', 'Services other than consulting'],
-        examples: ['Faculty compensation', 'Speaker fees for non-CME events'],
-        regulatoryBasis: '42 CFR 403.904(e)(2)',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'compensation_faculty_speaker_accredited',
-        term: 'Compensation for serving as faculty or as a speaker for an accredited or certified continuing education program',
-        definition: 'Compensation for serving as faculty or as a speaker for an accredited or certified continuing education program (Program Years 2013-2020)',
-        category: 'payment_type',
-        reportability: 'reportable',
-        conditions: ['Program Years 2013-2020', 'Accredited/certified CME program'],
-        examples: ['ACCME accredited programs', 'Certified continuing education'],
-        regulatoryBasis: '42 CFR 403.904(e)(2)',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'compensation_faculty_speaker_non_accredited',
-        term: 'Compensation for serving as faculty or as a speaker for a non-accredited and non-certified continuing education program',
-        definition: 'Compensation for serving as faculty or as a speaker for a non-accredited and non-certified continuing education program (Program Years 2013-2020)',
-        category: 'payment_type',
-        reportability: 'reportable',
-        conditions: ['Program Years 2013-2020', 'Non-accredited/non-certified program'],
-        examples: ['Industry-sponsored programs', 'Non-certified education'],
-        regulatoryBasis: '42 CFR 403.904(e)(2)',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'compensation_faculty_speaker_medical_education',
-        term: 'Compensation for serving as faculty or as a speaker for medical education program',
-        definition: 'Beginning with Program Year 2021, accredited/certified and unaccredited/non-certified continuing education program categories are combined',
-        category: 'payment_type',
-        reportability: 'reportable',
-        conditions: ['Program Year 2021+', 'Medical education program'],
-        examples: ['CME programs', 'Medical education presentations'],
-        regulatoryBasis: '42 CFR 403.904(e)(2)',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'consulting_fee',
-        term: 'Consulting Fee',
-        definition: 'A payment that a company makes to a physician for advice and expertise about a medical product or treatment',
-        category: 'payment_type',
-        reportability: 'reportable',
-        conditions: ['Amount > $10', 'Written agreement', 'Business needs'],
-        examples: ['Advisory board participation', 'Expert consultation', 'Product development advice'],
-        regulatoryBasis: '42 CFR 403.904(e)(2)',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'current_prospective_ownership',
-        term: 'Current or prospective ownership or investment interest',
-        definition: 'Ownership or investment interest currently held by physicians and teaching hospitals, as well as ownership or investment interest that could potentially be held',
-        category: 'payment_type',
-        reportability: 'reportable',
-        conditions: ['Any amount', 'Stock, options, partnerships, LLC membership'],
-        examples: ['Stock ownership', 'Stock options', 'Partnership shares', 'LLC membership'],
-        regulatoryBasis: '42 CFR 403.904(e)(2)',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'debt_forgiveness',
-        term: 'Debt Forgiveness',
-        definition: 'Forgiving the debt of a covered recipient, a physician owner, or the immediate family of the physician',
-        category: 'payment_type',
-        reportability: 'reportable',
-        conditions: ['Program Year 2021+', 'Debt forgiveness'],
-        examples: ['Loan forgiveness', 'Debt cancellation'],
-        regulatoryBasis: '42 CFR 403.904(e)(2)',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'education',
-        term: 'Education',
-        definition: 'Payments or transfers of value for classes, activities, programs, or events that involve learning or teaching a profession skill',
-        category: 'payment_type',
-        reportability: 'reportable',
-        conditions: ['Amount > $10', 'Educational content'],
-        examples: ['Textbooks', 'Medical journal articles', 'Educational materials'],
-        regulatoryBasis: '42 CFR 403.904(e)(2)',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'entertainment',
-        term: 'Entertainment',
-        definition: 'Attendance at recreational, cultural, sporting or other events that would generally have a cost',
-        category: 'payment_type',
-        reportability: 'reportable',
-        conditions: ['Amount > $10', 'Recreational/cultural/sporting events'],
-        examples: ['Concert tickets', 'Sporting event tickets', 'Cultural events'],
-        regulatoryBasis: '42 CFR 403.904(e)(2)',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'food_beverage',
-        term: 'Food and Beverage',
-        definition: 'Food and beverage',
-        category: 'payment_type',
-        reportability: 'reportable',
-        conditions: ['Amount > $10', 'Food and beverage provided'],
-        examples: ['Meals', 'Snacks', 'Beverages'],
-        regulatoryBasis: '42 CFR 403.904(e)(2)',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'gift',
-        term: 'Gift',
-        definition: 'A general category which includes anything a reporting entity provides to a covered recipient that does not fit into another Nature of Payment category',
-        category: 'payment_type',
-        reportability: 'reportable',
-        conditions: ['Amount > $10', 'Does not fit other categories'],
-        examples: ['Promotional items', 'General gifts'],
-        regulatoryBasis: '42 CFR 403.904(e)(2)',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'grant',
-        term: 'Grant',
-        definition: 'A payment to a covered recipient to support a specific cause or activity',
-        category: 'payment_type',
-        reportability: 'reportable',
-        conditions: ['Amount > $10', 'Specific cause or activity'],
-        examples: ['Research grants', 'Educational grants', 'Program support'],
-        regulatoryBasis: '42 CFR 403.904(e)(2)',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'honoraria',
-        term: 'Honoraria',
-        definition: 'Similar to consulting fees, but generally reserved for a brief, one-time activity without a set price',
-        category: 'payment_type',
-        reportability: 'reportable',
-        conditions: ['Amount > $10', 'Brief one-time activity'],
-        examples: ['One-time speaking fees', 'Brief consultation honoraria'],
-        regulatoryBasis: '42 CFR 403.904(e)(2)',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'long_term_medical_supply_loan',
-        term: 'Long-term medical supply or device loan',
-        definition: 'The loan of supplies or a device for a total of 91 days or longer, regardless of whether the loan was 90 consecutive days',
-        category: 'payment_type',
-        reportability: 'reportable',
-        conditions: ['Program Year 2021+', '91+ days loan period'],
-        examples: ['Medical device loans', 'Supply loans'],
-        regulatoryBasis: '42 CFR 403.904(e)(2)',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'royalty_license',
-        term: 'Royalty or License',
-        definition: 'Payments based on sales of products that use a physician\'s intellectual property',
-        category: 'payment_type',
-        reportability: 'reportable',
-        conditions: ['Amount > $10', 'Intellectual property based'],
-        examples: ['Patent royalties', 'License fees', 'IP-based payments'],
-        regulatoryBasis: '42 CFR 403.904(e)(2)',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'space_rental_facility_fees',
-        term: 'Space rental or facility fees',
-        definition: 'Payments or fees associated with renting a space or facility (Teaching Hospital covered recipients only)',
-        category: 'payment_type',
-        reportability: 'reportable',
-        conditions: ['Teaching Hospital only', 'Space or facility rental'],
-        examples: ['Conference room rental', 'Facility usage fees'],
-        regulatoryBasis: '42 CFR 403.904(e)(2)',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'travel_lodging',
-        term: 'Travel and Lodging',
-        definition: 'Any compensation for costs associated with travel, such as hotel fees, airfare, mileage, and cab fare',
-        category: 'payment_type',
-        reportability: 'reportable',
-        conditions: ['Amount > $10', 'Travel-related costs'],
-        examples: ['Airfare', 'Hotel fees', 'Mileage', 'Cab fare'],
-        regulatoryBasis: '42 CFR 403.904(e)(2)',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'payment_consulting',
-        term: 'Consulting Fee',
-        definition: 'Payments for professional services, advice, or expertise provided by healthcare professionals',
-        category: 'payment_type',
-        reportability: 'reportable',
-        conditions: ['Amount > $10', 'Services provided to manufacturer'],
-        examples: ['Advisory board participation', 'Expert consultation', 'Professional services'],
-        regulatoryBasis: '42 CFR 403.904',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'payment_speaking',
-        term: 'Speaking Fee',
-        definition: 'Payments for educational presentations, lectures, or speaking engagements',
-        category: 'payment_type',
-        reportability: 'reportable',
-        conditions: ['Amount > $10', 'Educational content related to manufacturer products'],
-        examples: ['Medical education presentations', 'Conference lectures', 'Training sessions'],
-        regulatoryBasis: '42 CFR 403.904',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'payment_travel',
-        term: 'Travel and Lodging',
-        definition: 'Payments for transportation, lodging, and meals related to business activities',
-        category: 'payment_type',
-        reportability: 'reportable',
-        conditions: ['Amount > $10', 'Business purpose', 'Related to manufacturer activities'],
-        examples: ['Airfare', 'Hotel accommodations', 'Meals during business travel'],
-        regulatoryBasis: '42 CFR 403.904',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'payment_food',
-        term: 'Food and Beverage',
-        definition: 'Payments for meals, snacks, and beverages provided to healthcare professionals',
-        category: 'payment_type',
-        reportability: 'conditional',
-        conditions: ['Amount > $10', 'Educational content provided', 'Not part of larger meal'],
-        examples: ['Lunch during educational presentation', 'Coffee during meeting', 'Dinner at conference'],
-        regulatoryBasis: '42 CFR 403.904',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'payment_gift',
-        term: 'Gift',
-        definition: 'Items of value given to healthcare professionals without expectation of services',
-        category: 'payment_type',
-        reportability: 'reportable',
-        conditions: ['Value > $10', 'Given to physician or teaching hospital'],
-        examples: ['Medical textbooks', 'Educational materials', 'Promotional items'],
-        regulatoryBasis: '42 CFR 403.904',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'payment_education',
-        term: 'Educational Support',
-        definition: 'Payments for continuing medical education, training, or professional development',
-        category: 'payment_type',
-        reportability: 'reportable',
-        conditions: ['Amount > $10', 'Educational content', 'Beneficiary is physician or teaching hospital'],
-        examples: ['CME course fees', 'Conference registration', 'Training program costs'],
-        regulatoryBasis: '42 CFR 403.904',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'payment_royalty',
-        term: 'Royalty or License Fee',
-        definition: 'Payments for intellectual property rights, patents, or licensing agreements',
-        category: 'payment_type',
-        reportability: 'reportable',
-        conditions: ['Amount > $10', 'Intellectual property related', 'Beneficiary is physician or teaching hospital'],
-        examples: ['Patent royalties', 'License fees', 'Intellectual property payments'],
-        regulatoryBasis: '42 CFR 403.904',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'payment_ownership',
-        term: 'Ownership or Investment Interest',
-        definition: 'Equity interests, stock options, or other ownership stakes in manufacturers',
-        category: 'payment_type',
-        reportability: 'reportable',
-        conditions: ['Any amount', 'Ownership interest in manufacturer'],
-        examples: ['Stock ownership', 'Equity interests', 'Investment stakes'],
-        regulatoryBasis: '42 CFR 403.904',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-
-      // Official CMS Covered Recipient Definitions
-      {
-        id: 'covered_recipient_physician',
-        term: 'Physician',
-        definition: 'For the purposes of Open Payments, a "physician" is any of the following types of professionals that are legally authorized by the state to practice, regardless of whether they are Medicare, Medicaid, or CHIP providers: Doctors of Medicine or Osteopathic Medicine, Doctors of Dental Medicine or Dental Surgery, Doctors of Podiatric Medicine, Doctors of Optometry, Chiropractors. Note: Medical residents are excluded.',
-        category: 'recipient_type',
-        reportability: 'reportable',
-        conditions: ['Legally authorized by state', 'Not a medical resident', 'Not a bona fide employee of reporting entity'],
-        examples: ['MD', 'DO', 'DDS', 'DMD', 'DPM', 'OD', 'DC'],
-        regulatoryBasis: '42 CFR 403.902',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'covered_recipient_physician_assistant',
-        term: 'Physician Assistant',
-        definition: 'A physician assistant who performs such services as such individual is legally authorized to perform (in the State in which the individual performs such services) in accordance with State law, and who meets such training, education, and experience requirements as the Secretary may prescribe in regulations',
-        category: 'recipient_type',
-        reportability: 'reportable',
-        conditions: ['Legally authorized by state', 'Meets training/education requirements', 'Not a bona fide employee of reporting entity'],
-        examples: ['PA', 'Physician Assistant'],
-        regulatoryBasis: '42 CFR 403.902',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'covered_recipient_nurse_practitioner',
-        term: 'Nurse Practitioner',
-        definition: 'A nurse practitioner who performs such services as such individual is legally authorized to perform (in the State in which the individual performs such services) in accordance with State law, and who meets such training, education, and experience requirements as the Secretary may prescribe in regulations',
-        category: 'recipient_type',
-        reportability: 'reportable',
-        conditions: ['Legally authorized by state', 'Meets training/education requirements', 'Not a bona fide employee of reporting entity'],
-        examples: ['NP', 'Nurse Practitioner'],
-        regulatoryBasis: '42 CFR 403.902',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'covered_recipient_clinical_nurse_specialist',
-        term: 'Clinical Nurse Specialist',
-        definition: 'An individual who is a registered nurse and is licensed to practice nursing in the State in which the clinical nurse specialist services are performed, and holds a master\'s degree in a defined clinical area of nursing from an accredited educational institution',
-        category: 'recipient_type',
-        reportability: 'reportable',
-        conditions: ['Registered nurse', 'Licensed in state', 'Master\'s degree in clinical nursing', 'Not a bona fide employee of reporting entity'],
-        examples: ['CNS', 'Clinical Nurse Specialist'],
-        regulatoryBasis: '42 CFR 403.902',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'covered_recipient_certified_registered_nurse_anesthetist',
-        term: 'Certified Registered Nurse Anesthetist',
-        definition: 'A certified registered nurse anesthetist licensed by the State who meets such education, training, and other requirements relating to anesthesia services and related care as the Secretary may prescribe. Such term also includes, as prescribed by the Secretary, an anesthesiologist assistant',
-        category: 'recipient_type',
-        reportability: 'reportable',
-        conditions: ['Licensed by state', 'Meets education/training requirements', 'Not a bona fide employee of reporting entity'],
-        examples: ['CRNA', 'Certified Registered Nurse Anesthetist', 'Anesthesiologist Assistant'],
-        regulatoryBasis: '42 CFR 403.902',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'covered_recipient_certified_nurse_midwife',
-        term: 'Certified Nurse Midwife',
-        definition: 'A registered nurse who has successfully completed a program of study and clinical experience meeting guidelines prescribed by the Secretary, or has been certified by an organization recognized by the Secretary',
-        category: 'recipient_type',
-        reportability: 'reportable',
-        conditions: ['Registered nurse', 'Completed program of study', 'Clinical experience', 'Not a bona fide employee of reporting entity'],
-        examples: ['CNM', 'Certified Nurse Midwife'],
-        regulatoryBasis: '42 CFR 403.902',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'covered_recipient_teaching_hospital',
-        term: 'Teaching Hospital',
-        definition: 'For the purposes of Open Payments, "teaching hospitals" are hospitals that received payment for Medicare direct graduate medical education (GME), inpatient prospective payment system (IPPS) indirect medical education (IME), or psychiatric hospital IME programs during the last calendar year for which such information is available',
-        category: 'recipient_type',
-        reportability: 'reportable',
-        conditions: ['Received Medicare GME payment', 'Received IPPS IME payment', 'Received psychiatric hospital IME payment'],
-        examples: ['Academic medical centers', 'University hospitals', 'Teaching institutions'],
-        regulatoryBasis: '42 CFR 403.902',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'recipient_teaching_hospital',
-        term: 'Teaching Hospital',
-        definition: 'Hospital that provides medical education and training programs',
-        category: 'recipient_type',
-        reportability: 'reportable',
-        conditions: ['Hospital with medical education programs', 'Residency or fellowship programs'],
-        examples: ['Academic medical centers', 'University hospitals', 'Teaching institutions'],
-        regulatoryBasis: '42 CFR 403.902',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'recipient_non_physician',
-        term: 'Non-Physician Healthcare Professional',
-        definition: 'Healthcare professional who cannot prescribe medications',
-        category: 'recipient_type',
-        reportability: 'non_reportable',
-        conditions: ['Cannot prescribe medications', 'Not a physician'],
-        examples: ['Nurse', 'Pharmacist', 'Physical therapist', 'Medical assistant'],
-        regulatoryBasis: '42 CFR 403.902',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-
-      // Product Types
-      {
-        id: 'product_drug',
-        term: 'Covered Drug',
-        definition: 'Prescription drug that is covered by Medicare, Medicaid, or CHIP',
-        category: 'product_type',
-        reportability: 'reportable',
-        conditions: ['Prescription drug', 'Covered by government programs'],
-        examples: ['Prescription medications', 'Brand name drugs', 'Generic drugs'],
-        regulatoryBasis: '42 CFR 403.902',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'product_device',
-        term: 'Covered Device',
-        definition: 'Medical device that is covered by Medicare, Medicaid, or CHIP',
-        category: 'product_type',
-        reportability: 'reportable',
-        conditions: ['Medical device', 'Covered by government programs'],
-        examples: ['Surgical instruments', 'Diagnostic equipment', 'Therapeutic devices'],
-        regulatoryBasis: '42 CFR 403.902',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'product_biological',
-        term: 'Covered Biological',
-        definition: 'Biological product that is covered by Medicare, Medicaid, or CHIP',
-        category: 'product_type',
-        reportability: 'reportable',
-        conditions: ['Biological product', 'Covered by government programs'],
-        examples: ['Vaccines', 'Blood products', 'Gene therapies'],
-        regulatoryBasis: '42 CFR 403.902',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-
-      // Key Regulatory Definitions
-      {
-        id: 'applicable_manufacturer',
-        term: 'Applicable Manufacturer',
-        definition: 'Entities that operate in the United States and (1) are engaged in the production, preparation, propagation, compounding, or conversion of a covered drug, device, biological, or medical supply, but not if such covered drug, device, biological or medical supply is solely for use by or within the entity itself or by the entity\'s own patients (this definition does not include distributors or wholesalers that do not hold title to any covered drug, device, biological or medical supply); or (2) are entities under common ownership with an entity described in part (1) of this definition, which provides assistance or support to such entities',
-        category: 'regulatory_term',
-        reportability: 'reportable',
-        conditions: ['Operates in United States', 'Produces covered products', 'Not solely for own use'],
-        examples: ['Pharmaceutical companies', 'Medical device manufacturers', 'Biotechnology companies'],
-        regulatoryBasis: '42 CFR 403.902',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'applicable_gpo',
-        term: 'Applicable Group Purchasing Organization (GPO)',
-        definition: 'Entities that operate in the United States and purchase, arrange for or negotiate the purchase of covered drugs, devices, biologicals, or medical supplies for a group of individuals or entities, but not solely for use by the entity itself',
-        category: 'regulatory_term',
-        reportability: 'reportable',
-        conditions: ['Operates in United States', 'Purchases for group', 'Not solely for own use'],
-        examples: ['Group purchasing organizations', 'Healthcare purchasing cooperatives'],
-        regulatoryBasis: '42 CFR 403.902',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'covered_recipient',
-        term: 'Covered Recipient',
-        definition: 'Any physician, physician assistant, nurse practitioner, clinical nurse specialist, certified registered nurse anesthetist, or certified nurse-midwife who is not a bona fide employee of the applicable manufacturer that is reporting the payment; or a teaching hospital',
-        category: 'regulatory_term',
-        reportability: 'reportable',
-        conditions: ['Qualified healthcare professional', 'Not a bona fide employee of reporting entity', 'Or teaching hospital'],
-        examples: ['Physicians', 'Nurse practitioners', 'Teaching hospitals'],
-        regulatoryBasis: '42 CFR 403.902',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'research',
-        term: 'Research',
-        definition: 'Research is a systematic investigation to develop or contribute to generalized knowledge about public health, including behavioral and social-sciences research. This definition includes basic and applied research, and product development',
-        category: 'regulatory_term',
-        reportability: 'reportable',
-        conditions: ['Systematic investigation', 'Develops generalized knowledge', 'Public health related'],
-        examples: ['Clinical trials', 'Basic research', 'Product development studies'],
-        regulatoryBasis: '42 CFR 403.902',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'transfers_of_value',
-        term: 'Transfers of Value',
-        definition: 'Payments or other transfers of value are anything of value given by an applicable manufacturer or applicable GPO to a covered recipient or physician owner/investor that does not fall within one of the excluded categories in the rule',
-        category: 'regulatory_term',
-        reportability: 'reportable',
-        conditions: ['Anything of value', 'Given by applicable manufacturer/GPO', 'To covered recipient', 'Not in excluded categories'],
-        examples: ['Cash payments', 'Gifts', 'Services', 'Travel'],
-        regulatoryBasis: '42 CFR 403.902',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'ownership_investment_interest',
-        term: 'Ownership or Investment Interest',
-        definition: 'Ownership and investment interest includes, but is not limited to: Stock, Stock option(s) (other than those received as compensation, until they are exercised), Partnership share(s), Limited liability company membership(s), Loans, Bonds or Other financial instruments that are secured with an entity\'s property or revenue or a portion of that property or revenue. This may be direct or indirect and through debt, equity or other means',
-        category: 'regulatory_term',
-        reportability: 'reportable',
-        conditions: ['Any amount', 'Direct or indirect ownership', 'Through debt, equity or other means'],
-        examples: ['Stock ownership', 'Stock options', 'Partnership shares', 'LLC membership', 'Loans', 'Bonds'],
-        regulatoryBasis: '42 CFR 403.902',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'npi',
-        term: 'National Provider Identifier (NPI)',
-        definition: 'An NPI, or National Provider Identifier, is a unique, random number assigned to each covered health care provider. It is used to identify the provider in administrative and financial transactions according to Health Insurance Portability and Accountability Act (HIPAA) standards',
-        category: 'regulatory_term',
-        reportability: 'conditional',
-        conditions: ['Unique identifier', 'HIPAA standard', 'Administrative and financial transactions'],
-        examples: ['10-digit NPI number', 'Provider identification'],
-        regulatoryBasis: 'HIPAA Standards',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-
-      // Compliance Terms
-      {
-        id: 'compliance_reportable',
-        term: 'Reportable Payment',
-        definition: 'Payment that must be reported to CMS under the Open Payments program',
-        category: 'compliance_term',
-        reportability: 'reportable',
-        conditions: ['Meets reporting requirements', 'Above threshold amounts'],
-        examples: ['Payments > $10', 'Research payments', 'Consulting fees'],
-        regulatoryBasis: '42 CFR 403.904',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'compliance_non_reportable',
-        term: 'Non-Reportable Payment',
-        definition: 'Payment that is exempt from CMS reporting requirements',
-        category: 'compliance_term',
-        reportability: 'non_reportable',
-        conditions: ['Below threshold amounts', 'Exempt categories'],
-        examples: ['Payments < $10', 'Educational materials', 'Patient care items'],
-        regulatoryBasis: '42 CFR 403.904',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'compliance_threshold',
-        term: 'Reporting Threshold',
-        definition: 'Minimum amount that triggers reporting requirements',
-        category: 'compliance_term',
-        reportability: 'conditional',
-        conditions: ['Amount > $10', 'Annual aggregate > $100'],
-        examples: ['$10 per payment', '$100 annual aggregate'],
-        regulatoryBasis: '42 CFR 403.904',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'international_recipient_reporting',
-        term: 'International Recipient Reporting',
-        definition: 'Payments to covered recipients located outside the United States remain reportable when made by an applicable manufacturer or applicable GPO operating in the United States. A non-U.S. recipient address does not exempt the payment from CMS Open Payments reporting if the recipient meets covered recipient criteria and thresholds are met.',
-        category: 'compliance_term',
-        reportability: 'reportable',
-        conditions: ['Covered recipient', 'Amount > $10 aggregate threshold', 'Applicable manufacturer/GPO operating in U.S.'],
-        examples: ['Consulting fee to U.S.-licensed physician practicing abroad', 'Grant to foreign teaching hospital on CMS list'],
-        regulatoryBasis: '42 CFR 403.904; CMS Open Payments Program Guidance',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'country_of_travel',
-        term: 'Country of Travel',
-        definition: 'For travel and lodging payments, CMS requires reporting of the city, state/province, and country where travel occurred. Travel outside the United States is reportable—not exempt—when all other reporting criteria are met.',
-        category: 'compliance_term',
-        reportability: 'reportable',
-        conditions: ['Nature of payment includes travel/lodging', 'Amount > $10', 'Travel destination captured in submission file'],
-        examples: ['International conference airfare', 'Hotel at medical congress outside U.S.'],
-        regulatoryBasis: 'CMS Open Payments data dictionary — Country_of_Travel field',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'recipient_country_field',
-        term: 'Recipient Country',
-        definition: 'The country where the covered recipient\'s primary business address is located. Used for domestic vs. international address validation. Non-U.S. values require Recipient Province and Recipient Postal Code instead of U.S. state/ZIP alone.',
-        category: 'compliance_term',
-        reportability: 'conditional',
-        conditions: ['Required for international addresses', 'Impacts address validation—not reportability exemption'],
-        examples: ['Recipient_Country = Canada', 'Recipient_Country = United Kingdom'],
-        regulatoryBasis: 'CMS Open Payments data dictionary — Recipient_Country field',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      },
-      {
-        id: 'us_territory_recipient',
-        term: 'U.S. Territory Recipient',
-        definition: 'Recipients in U.S. territories (Puerto Rico, Guam, U.S. Virgin Islands, American Samoa, Northern Mariana Islands) follow U.S. state/territory coding and remain fully reportable under Open Payments.',
-        category: 'regulatory_term',
-        reportability: 'reportable',
-        conditions: ['Valid territory state code (PR, GU, VI, AS, MP)', 'Standard reporting thresholds apply'],
-        examples: ['Physician in Puerto Rico (PR)', 'Hospital in Guam (GU)'],
-        regulatoryBasis: 'CMS Open Payments — U.S. state/territory codes',
-        lastUpdated: new Date().toISOString(),
-        version: '1.0'
-      }
+      ...buildCmsOfficialGlossaryTerms(),
+      ...buildPlatformSupplementGlossaryTerms(),
     ]
   }
 
@@ -1042,6 +413,18 @@ export class GlossaryService {
         priority: 5,
         effectiveDate: '2016-01-01',
         regulatoryBasis: 'EFPIA Disclosure Code',
+        lastUpdated: new Date().toISOString(),
+      },
+      {
+        id: 'rule_efpia_consent_required',
+        name: 'EFPIA Consent Required',
+        description: 'EU/UK recipient — obtain HCP consent to determine individual vs aggregate disclosure',
+        category: 'regulatory_term',
+        conditions: [],
+        result: 'conditional',
+        priority: 5,
+        effectiveDate: '2016-01-01',
+        regulatoryBasis: 'EFPIA Disclosure Code; UK ABPI Disclosure UK',
         lastUpdated: new Date().toISOString(),
       },
       {
@@ -1440,10 +823,34 @@ export class GlossaryService {
    * Get all glossary terms
    */
   async getGlossaryTerms(category?: string): Promise<GlossaryTerm[]> {
-    if (category) {
-      return this.glossaryTerms.filter(term => term.category === category)
+    if (category && category !== 'all') {
+      return this.glossaryTerms.filter((term) => term.category === category)
     }
     return this.glossaryTerms
+  }
+
+  /** CMS Open Payments official glossary (A–T) from openpaymentsdata.cms.gov/about */
+  async getCmsOfficialGlossary(options?: {
+    cmsCategory?: CmsGlossaryCategory
+    letter?: string
+  }): Promise<GlossaryTerm[]> {
+    let terms = this.glossaryTerms.filter((t) => t.source === 'cms_official')
+    if (options?.cmsCategory) {
+      terms = terms.filter((t) => t.cmsCategory === options.cmsCategory)
+    }
+    if (options?.letter) {
+      terms = terms.filter((t) => t.sortLetter === options.letter.toUpperCase())
+    }
+    return terms.sort((a, b) => a.term.localeCompare(b.term))
+  }
+
+  getCmsGlossaryMeta() {
+    return {
+      letters: CMS_GLOSSARY_LETTERS,
+      categories: ['Nature of Payment', 'Type of Payment', 'General definitions'] as CmsGlossaryCategory[],
+      totalOfficialTerms: CMS_OPEN_PAYMENTS_GLOSSARY.length,
+      sourceUrl: 'https://openpaymentsdata.cms.gov/about',
+    }
   }
 
   /**
@@ -1461,10 +868,13 @@ export class GlossaryService {
    */
   async searchGlossaryTerms(query: string): Promise<GlossaryTerm[]> {
     const searchQuery = query.toLowerCase()
-    return this.glossaryTerms.filter(term => 
-      term.term.toLowerCase().includes(searchQuery) ||
-      term.definition.toLowerCase().includes(searchQuery) ||
-      term.examples?.some(example => example.toLowerCase().includes(searchQuery))
+    return this.glossaryTerms.filter(
+      (term) =>
+        term.term.toLowerCase().includes(searchQuery) ||
+        term.definition.toLowerCase().includes(searchQuery) ||
+        term.programYearNote?.toLowerCase().includes(searchQuery) ||
+        term.cmsCategory?.toLowerCase().includes(searchQuery) ||
+        term.examples?.some((example) => example.toLowerCase().includes(searchQuery))
     )
   }
 
@@ -1561,6 +971,7 @@ export class GlossaryService {
     nonReportableTerms: number
     conditionalTerms: number
     exemptTerms: number
+    cmsOfficialTerms: number
     ruleCategories: Record<string, number>
   }> {
     const reportableTerms = this.glossaryTerms.filter(term => term.reportability === 'reportable').length
@@ -1580,7 +991,8 @@ export class GlossaryService {
       nonReportableTerms,
       conditionalTerms,
       exemptTerms,
-      ruleCategories
+      cmsOfficialTerms: this.glossaryTerms.filter((t) => t.source === 'cms_official').length,
+      ruleCategories,
     }
   }
 }

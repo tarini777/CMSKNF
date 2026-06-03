@@ -12,6 +12,7 @@ import {
   resolveDisclosureType,
 } from '@/lib/transparency-exemptions'
 import { ReportabilityAnalysis } from '@/lib/glossary-service'
+import { buildGlossaryMatchesForRecord } from '@/lib/rule-citation-service'
 import { describeRecipientLocation, isOutsideUnitedStates, isUnitedStatesCountry, isValidUsStateOrTerritory } from '@/lib/geographic-rules'
 import { internationalComplianceService } from '@/lib/international-compliance-service'
 import { amountMeetsEurThreshold } from '@/lib/currency-service'
@@ -31,7 +32,7 @@ export async function runTransparencyAnalysis(record: CMSRecord): Promise<Transp
   const reasoning: string[] = []
   const warnings: string[] = []
   const recommendations: string[] = []
-  const glossaryMatches: ReportabilityAnalysis['glossaryMatches'] = []
+  let glossaryMatches: ReportabilityAnalysis['glossaryMatches'] = []
 
   const normalized = normalizePaymentAmount(
     record.totalAmountOfPaymentUsdollars ?? 0,
@@ -48,6 +49,7 @@ export async function runTransparencyAnalysis(record: CMSRecord): Promise<Transp
   if (exemption.exempt) {
     applicableRules.push(exemption.ruleId!)
     reasoning.push(exemption.reason!)
+    glossaryMatches = buildGlossaryMatchesForRecord(record)
     return buildResult(record, {
       isReportable: false,
       confidence: 0.95,
@@ -73,6 +75,7 @@ export async function runTransparencyAnalysis(record: CMSRecord): Promise<Transp
     const disclosure = resolveDisclosureType(record, 'ownership')
     applicableRules.push(...disclosure.ruleIds)
     reasoning.push(...disclosure.reasoning)
+    glossaryMatches = buildGlossaryMatchesForRecord(record)
     return buildResult(record, {
       isReportable: true,
       confidence,
@@ -193,6 +196,8 @@ export async function runTransparencyAnalysis(record: CMSRecord): Promise<Transp
   })
   warnings.push(...jurisdictionAnalysis.allWarnings)
   recommendations.push(...jurisdictionAnalysis.allRecommendations)
+
+  glossaryMatches = buildGlossaryMatchesForRecord(record)
 
   return buildResult(record, {
     isReportable,

@@ -386,10 +386,8 @@ export default function DataAnalysisDashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">CMS Data Analysis & Pattern Detection</h2>
-          <p className="text-muted-foreground">
-            Exploratory analysis of CMS Open Payments data for fraud detection and compliance patterns
-          </p>
+          <h2 className="text-lg font-semibold">Patterns</h2>
+          <p className="text-xs text-muted-foreground">Anomalies and spend trends</p>
         </div>
         <div className="flex gap-2">
           <Button onClick={handleAnalyzePatterns} disabled={loading}>

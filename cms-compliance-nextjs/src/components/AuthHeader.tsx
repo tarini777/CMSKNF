@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label'
 import { LogIn, LogOut, User } from 'lucide-react'
 import { UserRole } from '@/types/cms'
+import { usePersona } from '@/context/PersonaContext'
 
 interface SessionUser {
   email: string
@@ -16,6 +17,7 @@ interface SessionUser {
 }
 
 export default function AuthHeader() {
+  const { syncPersonaFromRole } = usePersona()
   const [user, setUser] = useState<SessionUser | null>(null)
   const [email, setEmail] = useState('admin@cms-compliance.local')
   const [password, setPassword] = useState('admin123')
@@ -28,6 +30,7 @@ export default function AuthHeader() {
       if (res.ok) {
         const data = await res.json()
         setUser(data.data)
+        if (data.data?.role) syncPersonaFromRole(data.data.role)
       }
     } catch {
       setUser(null)
@@ -48,6 +51,7 @@ export default function AuthHeader() {
     const data = await res.json()
     if (data.success) {
       setUser(data.data)
+      syncPersonaFromRole(data.data.role)
       setOpen(false)
     } else {
       setError(data.error || 'Login failed')
@@ -99,7 +103,7 @@ export default function AuthHeader() {
             Sign In
           </Button>
           <p className="text-xs text-muted-foreground">
-            Demo: admin@cms-compliance.local / admin123 (run npm run db:seed)
+            Demo: admin / compliance / analyst / exec @cms-compliance.local — passwords admin123, compliance123, analyst123, exec123
           </p>
         </div>
       </DialogContent>

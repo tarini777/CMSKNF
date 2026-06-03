@@ -1,37 +1,49 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { getActiveProgramYear, getMilestoneStatus } from '@/lib/submission-calendar'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Download, Calendar, CheckSquare, RefreshCw, Scale, FileText } from 'lucide-react'
+import { Download, RefreshCw, CheckSquare, Package } from 'lucide-react'
+import DisputeDashboard from './DisputeDashboard'
+import ConsentDashboard from './ConsentDashboard'
 
 interface Milestone {
   id: string
   jurisdiction: string
+  phase: string
   title: string
   startDate: string
   endDate: string
   description: string
   actionRequired: string
+  anticipated?: boolean
+}
+
+interface UsSummary {
+  programYear: number
+  submissionWindow: string
+  reportingDeadline: string
+  disputeWindow: string
+  publicationDate: string
 }
 
 interface ChecklistItem {
   id: string
   label: string
-  required: boolean
   completed: boolean
-  description: string
 }
 
 export default function TransparencyDashboard() {
   const [milestones, setMilestones] = useState<Milestone[]>([])
+  const [usSummary, setUsSummary] = useState<UsSummary | null>(null)
   const [checklist, setChecklist] = useState<ChecklistItem[]>([])
   const [aggregateMsg, setAggregateMsg] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [bundleInfo, setBundleInfo] = useState<{ files: Array<{ filename: string; rowCount: number }> } | null>(null)
 
-  const programYear = new Date().getFullYear()
+  const programYear = getActiveProgramYear()
 
   useEffect(() => {
     loadData()
@@ -46,7 +58,10 @@ export default function TransparencyDashboard() {
       ])
       const cal = await calRes.json()
       const att = await attRes.json()
-      if (cal.success) setMilestones(cal.data)
+      if (cal.success) {
+        setMilestones(cal.data.filter((m: Milestone) => m.jurisdiction === 'US'))
+        setUsSummary(cal.usSummary ?? null)
+      }
       if (att.success) setChecklist(att.data.checklist)
     } finally {
       setLoading(false)
@@ -68,136 +83,159 @@ export default function TransparencyDashboard() {
     window.open(`/api/transparency/export?programYear=${programYear}`, '_blank')
   }
 
-  const implementedRules = [
-    { id: 'rule_discount_rebate_exempt', label: 'Discount/rebate exemption' },
-    { id: 'rule_sample_patient_use_exempt', label: 'Product sample exemption' },
-    { id: 'rule_patient_education_exempt', label: 'Patient education exemption' },
-    { id: 'rule_support_act_covered_recipient', label: 'SUPPORT Act recipients' },
-    { id: 'rule_ownership_investment_reportable', label: 'Ownership → reportable' },
-    { id: 'rule_indirect_payment_reportable', label: 'Third-party/indirect payments' },
-    { id: 'intl_fr_loi_bertrand_10_eur', label: 'France €10 (Loi Bertrand)' },
-    { id: 'rule_annual_aggregate_threshold_100', label: '$100 annual aggregate' },
-  ]
+  const loadBundle = async () => {
+    const res = await fetch(`/api/transparency/export?programYear=${programYear}&bundle=1`)
+    const data = await res.json()
+    if (data.success) setBundleInfo(data.data)
+  }
+
+  const downloadPuf = (file: 'general' | 'research' | 'ownership') => {
+    window.open(`/api/transparency/export/file?programYear=${programYear}&file=${file}`, '_blank')
+  }
+
+  const doneCount = checklist.filter((c) => c.completed).length
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between gap-4">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Scale className="w-6 h-6" />
-            Transparency Compliance (COM-TRANSP-001)
-          </h2>
-          <p className="text-muted-foreground">
-            CMS Sunshine Act, EFPIA, Loi Bertrand, and UK Disclosure UK rules — program year {programYear}
-          </p>
+          <h2 className="text-lg font-semibold">Submission</h2>
+          <p className="text-xs text-muted-foreground">Program year {programYear}</p>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={runAggregate}>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Recalc Aggregates
+            <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+            Recalc
           </Button>
           <Button size="sm" onClick={exportCms}>
-            <Download className="w-4 h-4 mr-2" />
-            CMS CSV Export
+            <Download className="w-3.5 h-3.5 mr-1.5" />
+            Export CSV
           </Button>
         </div>
       </div>
 
       {aggregateMsg && (
-        <p className="text-sm text-muted-foreground bg-muted p-3 rounded-md">{aggregateMsg}</p>
+        <p className="text-xs text-muted-foreground bg-muted rounded-md px-3 py-2">{aggregateMsg}</p>
       )}
 
-      <Tabs defaultValue="rules">
-        <TabsList>
-          <TabsTrigger value="rules">Active Rules</TabsTrigger>
-          <TabsTrigger value="calendar">Submission Calendar</TabsTrigger>
-          <TabsTrigger value="attestation">Attestation</TabsTrigger>
+      {usSummary && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <StatChip label="Submit" value={usSummary.submissionWindow} />
+          <StatChip label="Attest by" value={usSummary.reportingDeadline} />
+          <StatChip label="Disputes" value={usSummary.disputeWindow} />
+          <StatChip label="Publish" value={usSummary.publicationDate} />
+        </div>
+      )}
+
+      <Tabs defaultValue="calendar">
+        <TabsList className="h-9 flex-wrap">
+          <TabsTrigger value="calendar" className="text-xs">Timeline</TabsTrigger>
+          <TabsTrigger value="attestation" className="text-xs">Checklist {doneCount}/{checklist.length}</TabsTrigger>
+          <TabsTrigger value="export" className="text-xs">OPS bundle</TabsTrigger>
+          <TabsTrigger value="disputes" className="text-xs">Disputes</TabsTrigger>
+          <TabsTrigger value="consent" className="text-xs">Consent</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="rules" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Implemented transparency rules</CardTitle>
-              <CardDescription>From CMS Transparency BRD — applied on upload via transparency-rules-engine</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-              {implementedRules.map((r) => (
-                <Badge key={r.id} variant="secondary">
-                  {r.label}
-                </Badge>
-              ))}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Record fields</CardTitle>
-              <CardDescription>Stored per payment after analysis</CardDescription>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground space-y-1">
-              <p><strong>cmsReportCategory:</strong> general | research | ownership</p>
-              <p><strong>disclosureType:</strong> individual | aggregate (EFPIA/UK consent model)</p>
-              <p><strong>aggregateStatus:</strong> pending | reportable | non_reportable ($100 annual rule)</p>
-              <p><strong>paymentCurrency / exchangeRate:</strong> multi-currency normalization to USD</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="calendar">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="w-5 h-5" />
-                Regulatory submission calendar
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <p className="text-muted-foreground">Loading...</p>
-              ) : (
-                <div className="space-y-4">
-                  {milestones.map((m) => (
-                    <div key={m.id} className="border rounded-lg p-4">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge variant="outline">{m.jurisdiction}</Badge>
-                        <span className="font-medium">{m.title}</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{m.startDate} → {m.endDate}</p>
-                      <p className="text-sm mt-2">{m.description}</p>
-                      <p className="text-sm mt-1 text-primary">{m.actionRequired}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="attestation">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckSquare className="w-5 h-5" />
-                CMS attestation checklist (REQ-017)
-              </CardTitle>
-              <CardDescription>Final CMS portal attestation must be completed manually</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {checklist.map((item) => (
-                <div key={item.id} className="flex items-start gap-3 p-3 border rounded-md">
-                  <FileText className={`w-4 h-4 mt-0.5 ${item.completed ? 'text-green-600' : 'text-muted-foreground'}`} />
-                  <div>
-                    <p className="font-medium">{item.label}</p>
-                    <p className="text-sm text-muted-foreground">{item.description}</p>
-                    <Badge variant={item.completed ? 'default' : 'outline'} className="mt-1">
-                      {item.completed ? 'Complete' : 'Pending'}
-                    </Badge>
+        <TabsContent value="calendar" className="mt-3 space-y-2">
+          {loading ? (
+            <p className="text-sm text-muted-foreground py-4">Loading…</p>
+          ) : (
+            milestones.map((m) => {
+              const status = getMilestoneStatus(m)
+              return (
+                <div
+                  key={m.id}
+                  className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 text-sm ${
+                    status === 'active' ? 'border-primary bg-primary/5' : 'bg-card'
+                  }`}
+                >
+                  <Badge variant="outline" className="text-[10px] shrink-0">
+                    {m.phase}
+                  </Badge>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium truncate">{m.title}</p>
+                    <p className="text-[11px] text-muted-foreground font-mono">
+                      {m.startDate === m.endDate ? m.startDate : `${m.startDate} – ${m.endDate}`}
+                    </p>
                   </div>
+                  {status === 'active' && (
+                    <Badge className="bg-emerald-600 text-white text-[10px] shrink-0">Now</Badge>
+                  )}
+                  {status === 'past' && (
+                    <Badge variant="secondary" className="text-[10px] shrink-0">
+                      Done
+                    </Badge>
+                  )}
                 </div>
+              )
+            })
+          )}
+        </TabsContent>
+
+        <TabsContent value="attestation" className="mt-3 space-y-2">
+          {checklist.map((item) => (
+            <div
+              key={item.id}
+              className="flex items-center gap-3 rounded-lg border px-3 py-2.5 bg-card"
+            >
+              <CheckSquare
+                className={`w-4 h-4 shrink-0 ${item.completed ? 'text-emerald-600' : 'text-muted-foreground'}`}
+              />
+              <span className="text-sm flex-1">{item.label}</span>
+              <Badge variant={item.completed ? 'default' : 'outline'} className="text-[10px]">
+                {item.completed ? 'Done' : 'Open'}
+              </Badge>
+            </div>
+          ))}
+        </TabsContent>
+
+        <TabsContent value="export" className="mt-3 space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Full PUF bundle for CMS Open Payments System upload — attestation still required on CMS portal.
+          </p>
+          <Button size="sm" variant="outline" onClick={loadBundle}>
+            <Package className="w-3.5 h-3.5 mr-1.5" />
+            Preview bundle
+          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" onClick={() => downloadPuf('general')}>General (91-col)</Button>
+            <Button size="sm" onClick={() => downloadPuf('research')}>Research</Button>
+            <Button size="sm" onClick={() => downloadPuf('ownership')}>Ownership</Button>
+          </div>
+          {bundleInfo?.files && (
+            <div className="space-y-1">
+              {bundleInfo.files.map((f) => (
+                <p key={f.filename} className="text-xs font-mono text-muted-foreground">
+                  {f.filename} · {f.rowCount} rows
+                </p>
               ))}
-            </CardContent>
-          </Card>
+            </div>
+          )}
+          <a href="/disclosure" target="_blank" className="text-xs text-primary underline block">
+            Open public disclosure site →
+          </a>
+          <a href="/hcp-review" target="_blank" className="text-xs text-primary underline block">
+            HCP 45-day review portal →
+          </a>
+        </TabsContent>
+
+        <TabsContent value="disputes" className="mt-3">
+          <DisputeDashboard />
+        </TabsContent>
+
+        <TabsContent value="consent" className="mt-3">
+          <ConsentDashboard />
         </TabsContent>
       </Tabs>
+    </div>
+  )
+}
+
+function StatChip({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border bg-card px-3 py-2">
+      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
+      <p className="text-xs font-medium mt-0.5 leading-snug">{value}</p>
     </div>
   )
 }

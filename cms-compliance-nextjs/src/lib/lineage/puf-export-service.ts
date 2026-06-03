@@ -36,6 +36,31 @@ export async function generateFullGeneralPufCsv(programYear?: string): Promise<s
   return [headerLabels(CMS_GENERAL_PUF_HEADERS), ...rows].join('\n')
 }
 
+export async function generateFullResearchPufCsv(programYear?: string): Promise<string> {
+  const year = programYear || String(new Date().getFullYear())
+  const lines = await prisma.cmsResearchPaymentLine.findMany({
+    where: { programYear: year, isReportable: true },
+    orderBy: { recordId: 'asc' },
+  })
+
+  if (lines.length === 0) {
+    return 'RECORD_ID,PROGRAM_YEAR,TOTAL_AMOUNT,NAME_OF_STUDY,CLINICALTRIALS_GOV_IDENTIFIER'
+  }
+
+  const allKeys = new Set<string>()
+  for (const line of lines) {
+    Object.keys(line.pufFields as object).forEach((k) => allKeys.add(k))
+  }
+  const headers = [...allKeys].sort()
+
+  const rows = lines.map((line) => {
+    const fields = line.pufFields as Record<string, unknown>
+    return headers.map((h) => escapeCsv(fields[h] as string | number | undefined)).join(',')
+  })
+
+  return [headerLabels(headers), ...rows].join('\n')
+}
+
 export async function generateFullOwnershipPufCsv(programYear?: string): Promise<string> {
   const year = programYear || String(new Date().getFullYear())
   const lines = await prisma.cmsOwnershipPaymentLine.findMany({

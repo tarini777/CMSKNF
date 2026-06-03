@@ -34,6 +34,10 @@ interface GlossaryTerm {
   conditions?: string[]
   examples?: string[]
   regulatoryBasis?: string
+  cmsCategory?: string
+  programYearNote?: string
+  sortLetter?: string
+  source?: string
   lastUpdated: string
   version: string
 }
@@ -71,13 +75,26 @@ interface ReportabilityAnalysis {
   }[]
 }
 
+function StatPill({ label, value }: { label: string; value: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border bg-background px-2.5 py-1 text-xs">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-semibold tabular-nums">{value}</span>
+    </span>
+  )
+}
+
 export default function GlossaryDashboard() {
   const [glossaryTerms, setGlossaryTerms] = useState<GlossaryTerm[]>([])
+  const [cmsTerms, setCmsTerms] = useState<GlossaryTerm[]>([])
+  const [cmsMeta, setCmsMeta] = useState<{ letters: string[]; categories: string[]; sourceUrl: string; totalOfficialTerms: number } | null>(null)
+  const [cmsLetter, setCmsLetter] = useState<string>('all')
+  const [cmsCategory, setCmsCategory] = useState<string>('all')
   const [reportabilityRules, setReportabilityRules] = useState<ReportabilityRule[]>([])
   const [stats, setStats] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState('terms')
+  const [activeTab, setActiveTab] = useState('cms-glossary')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [analysisResult, setAnalysisResult] = useState<ReportabilityAnalysis | null>(null)
@@ -103,18 +120,20 @@ export default function GlossaryDashboard() {
     setError(null)
     
     try {
-      const [termsResponse, rulesResponse, statsResponse, countriesResponse] = await Promise.all([
+      const [termsResponse, rulesResponse, statsResponse, countriesResponse, cmsResponse] = await Promise.all([
         fetch('/api/glossary?action=terms'),
         fetch('/api/glossary?action=rules'),
         fetch('/api/glossary?action=stats'),
         fetch('/api/glossary?action=countries'),
+        fetch('/api/glossary?action=cms-glossary'),
       ])
 
-      const [termsData, rulesData, statsData, countriesData] = await Promise.all([
+      const [termsData, rulesData, statsData, countriesData, cmsData] = await Promise.all([
         termsResponse.json(),
         rulesResponse.json(),
         statsResponse.json(),
         countriesResponse.json(),
+        cmsResponse.json(),
       ])
 
       if (termsData.success) {
@@ -129,6 +148,10 @@ export default function GlossaryDashboard() {
       if (countriesData.success) {
         setInternationalCountries(countriesData.data.countries)
       }
+      if (cmsData.success) {
+        setCmsTerms(cmsData.data.terms)
+        setCmsMeta(cmsData.data.meta)
+      }
     } catch (err) {
       setError('Failed to load glossary data')
       console.error('Load error:', err)
@@ -136,6 +159,24 @@ export default function GlossaryDashboard() {
       setLoading(false)
     }
   }
+
+  const loadCmsGlossary = async () => {
+    const params = new URLSearchParams({ action: 'cms-glossary' })
+    if (cmsLetter !== 'all') params.set('letter', cmsLetter)
+    if (cmsCategory !== 'all') params.set('cmsCategory', cmsCategory)
+    const res = await fetch(`/api/glossary?${params}`)
+    const data = await res.json()
+    if (data.success) {
+      setCmsTerms(data.data.terms)
+      setCmsMeta(data.data.meta)
+    }
+  }
+
+  useEffect(() => {
+    if (activeTab === 'cms-glossary') {
+      loadCmsGlossary()
+    }
+  }, [activeTab, cmsLetter, cmsCategory])
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
@@ -214,13 +255,23 @@ export default function GlossaryDashboard() {
     }
   }
 
-  const filteredTerms = glossaryTerms.filter(term => 
-    !selectedCategory || term.category === selectedCategory
+  const filteredTerms = glossaryTerms.filter(
+    (term) => !selectedCategory || selectedCategory === 'all' || term.category === selectedCategory
   )
 
-  const filteredRules = reportabilityRules.filter(rule => 
-    !selectedCategory || rule.category === selectedCategory
+  const filteredRules = reportabilityRules.filter(
+    (rule) => !selectedCategory || selectedCategory === 'all' || rule.category === selectedCategory
   )
+
+  const filteredCmsTerms = cmsTerms.filter((term) => {
+    const q = searchQuery.toLowerCase()
+    if (!q) return true
+    return (
+      term.term.toLowerCase().includes(q) ||
+      term.definition.toLowerCase().includes(q) ||
+      term.programYearNote?.toLowerCase().includes(q)
+    )
+  })
 
   const filteredIntl = internationalCountries.filter((c) => {
     const matchesRegion = intlRegionFilter === 'all' || c.region === intlRegionFilter
@@ -234,26 +285,15 @@ export default function GlossaryDashboard() {
   })
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">CMS Glossary & Rules Engine</h2>
-          <p className="text-muted-foreground">
-            Official CMS Open Payments glossary terms and reportability rules based on 21 CFR
-          </p>
+          <h2 className="text-lg font-semibold">Glossary</h2>
+          <p className="text-xs text-muted-foreground">Open Payments terms & reportability</p>
         </div>
-        <Button onClick={loadGlossaryData} disabled={loading}>
-          {loading ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Loading...
-            </>
-          ) : (
-            <>
-              <BookOpen className="h-4 w-4 mr-2" />
-              Refresh Data
-            </>
-          )}
+        <Button variant="outline" size="sm" onClick={loadGlossaryData} disabled={loading}>
+          {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <BookOpen className="h-3.5 w-3.5 mr-1.5" />}
+          Refresh
         </Button>
       </div>
 
@@ -264,166 +304,123 @@ export default function GlossaryDashboard() {
       )}
 
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Terms</CardTitle>
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalTerms}</div>
-              <p className="text-xs text-muted-foreground">
-                Glossary entries
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Rules</CardTitle>
-              <Scale className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalRules}</div>
-              <p className="text-xs text-muted-foreground">
-                Reportability rules
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Reportable Terms</CardTitle>
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.reportableTerms}</div>
-              <p className="text-xs text-muted-foreground">
-                Reportable categories
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Non-Reportable</CardTitle>
-              <XCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.nonReportableTerms}</div>
-              <p className="text-xs text-muted-foreground">
-                Exempt categories
-              </p>
-            </CardContent>
-          </Card>
+        <div className="flex flex-wrap gap-2">
+          <StatPill label="CMS terms" value={String(stats.cmsOfficialTerms ?? cmsMeta?.totalOfficialTerms ?? '—')} />
+          <StatPill label="Rules" value={String(stats.totalRules)} />
+          <StatPill label="Reportable" value={String(stats.reportableTerms)} />
+          <StatPill label="Excluded" value={String(stats.nonReportableTerms)} />
         </div>
       )}
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="terms">Glossary Terms</TabsTrigger>
-          <TabsTrigger value="rules">Reportability Rules</TabsTrigger>
-          <TabsTrigger value="international">Americas & Europe</TabsTrigger>
-          <TabsTrigger value="analysis">Reportability Analysis</TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="h-9 flex-wrap">
+          <TabsTrigger value="cms-glossary" className="text-xs">CMS A–T</TabsTrigger>
+          <TabsTrigger value="terms" className="text-xs">All terms</TabsTrigger>
+          <TabsTrigger value="rules" className="text-xs">Rules</TabsTrigger>
+          <TabsTrigger value="international" className="text-xs">Global</TabsTrigger>
+          <TabsTrigger value="analysis" className="text-xs">Test</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="terms" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Search Glossary Terms</CardTitle>
-              <CardDescription>
-                Official CMS Open Payments glossary based on 21 CFR definitions
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <Label htmlFor="search">Search Terms</Label>
-                  <Input
-                    id="search"
-                    placeholder="Search glossary terms, definitions, or examples..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="category">Category</Label>
-                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="All categories" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
-                      <SelectItem value="payment_type">Payment Types</SelectItem>
-                      <SelectItem value="recipient_type">Recipient Types</SelectItem>
-                      <SelectItem value="regulatory_term">Regulatory Terms</SelectItem>
-                      <SelectItem value="compliance_term">Compliance Terms</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-end">
-                  <Button onClick={handleSearch} disabled={loading}>
-                    {loading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Search className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="cms-glossary" className="mt-3 space-y-3">
+          <div className="flex flex-col lg:flex-row gap-2">
+            <Select value={cmsCategory} onValueChange={setCmsCategory}>
+              <SelectTrigger className="w-full lg:w-48 h-9">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All categories</SelectItem>
+                <SelectItem value="Nature of Payment">Nature of Payment</SelectItem>
+                <SelectItem value="Type of Payment">Type of Payment</SelectItem>
+                <SelectItem value="General definitions">General definitions</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input
+              placeholder="Search…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-9"
+            />
+          </div>
+          <div className="flex flex-wrap gap-1">
+            <Button size="sm" variant={cmsLetter === 'all' ? 'default' : 'outline'} className="h-7 px-2 text-xs" onClick={() => setCmsLetter('all')}>
+              All
+            </Button>
+            {(cmsMeta?.letters ?? []).map((letter) => (
+              <Button
+                key={letter}
+                size="sm"
+                variant={cmsLetter === letter ? 'default' : 'outline'}
+                className="h-7 w-7 p-0 text-xs"
+                onClick={() => setCmsLetter(letter)}
+              >
+                {letter}
+              </Button>
+            ))}
+          </div>
 
-          <div className="grid grid-cols-1 gap-4">
-            {filteredTerms.map((term) => (
-              <Card key={term.id}>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      {getCategoryIcon(term.category)}
-                      <CardTitle className="text-lg">{term.term}</CardTitle>
-                    </div>
-                    <Badge variant={getReportabilityBadgeVariant(term.reportability)}>
-                      {term.reportability.replace('_', ' ').toUpperCase()}
+          <div className="space-y-2">
+            {filteredCmsTerms.map((term) => (
+              <details key={term.id} className="rounded-lg border bg-card group">
+                <summary className="flex items-center gap-2 px-3 py-2.5 cursor-pointer list-none text-sm">
+                  <Badge variant="outline" className="text-[10px] shrink-0">{term.sortLetter}</Badge>
+                  <span className="font-medium truncate flex-1">{term.term}</span>
+                  {term.cmsCategory && (
+                    <Badge variant="secondary" className="text-[9px] shrink-0 hidden sm:inline-flex">
+                      {term.cmsCategory}
                     </Badge>
+                  )}
+                </summary>
+                <div className="px-3 pb-3 pt-0 text-sm text-muted-foreground border-t">
+                  <p className="leading-relaxed">{term.definition}</p>
+                  {term.programYearNote && (
+                    <p className="text-xs text-amber-800 mt-2">{term.programYearNote}</p>
+                  )}
+                </div>
+              </details>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="terms" className="mt-3 space-y-3">
+          <div className="flex flex-wrap gap-2">
+            <Input
+              placeholder="Search terms…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              className="h-9 flex-1 min-w-[12rem]"
+            />
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-40 h-9">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="payment_type">Payment</SelectItem>
+                <SelectItem value="recipient_type">Recipient</SelectItem>
+                <SelectItem value="regulatory_term">Regulatory</SelectItem>
+                <SelectItem value="compliance_term">Compliance</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button size="sm" onClick={handleSearch} disabled={loading} className="h-9">
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+            </Button>
+          </div>
+
+          <div className="space-y-2">
+            {filteredTerms.map((term) => (
+              <div key={term.id} className="rounded-lg border bg-card px-3 py-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {getCategoryIcon(term.category)}
+                    <span className="font-medium text-sm truncate">{term.term}</span>
                   </div>
-                  <CardDescription>
-                    {term.definition}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {term.conditions && term.conditions.length > 0 && (
-                    <div>
-                      <h4 className="font-semibold text-sm mb-2">Conditions:</h4>
-                      <ul className="text-sm text-muted-foreground space-y-1">
-                        {term.conditions.map((condition, index) => (
-                          <li key={index}>• {condition}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  
-                  {term.examples && term.examples.length > 0 && (
-                    <div>
-                      <h4 className="font-semibold text-sm mb-2">Examples:</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {term.examples.map((example, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {example}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {term.regulatoryBasis && (
-                    <div className="text-xs text-muted-foreground">
-                      <strong>Regulatory Basis:</strong> {term.regulatoryBasis}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                  <Badge variant={getReportabilityBadgeVariant(term.reportability)} className="text-[10px] shrink-0">
+                    {term.reportability.replace('_', ' ')}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{term.definition}</p>
+              </div>
             ))}
           </div>
         </TabsContent>
@@ -587,18 +584,10 @@ export default function GlossaryDashboard() {
           </div>
         </TabsContent>
 
-        <TabsContent value="analysis" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Reportability Analysis</CardTitle>
-              <CardDescription>
-                Test payment records against CMS Open Payments reportability rules
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="amount">Payment Amount ($)</Label>
+        <TabsContent value="analysis" className="mt-3 space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div>
+              <Label htmlFor="amount" className="text-xs">Amount ($)</Label>
                   <Input
                     id="amount"
                     type="number"
@@ -632,119 +621,53 @@ export default function GlossaryDashboard() {
                   />
                 </div>
               </div>
-              
-              <Button onClick={handleAnalyzeReportability} disabled={loading} className="w-full">
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Analyzing...
-                  </>
-                ) : (
-                  <>
-                    <Scale className="h-4 w-4 mr-2" />
-                    Analyze Reportability
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
+
+          <Button onClick={handleAnalyzeReportability} disabled={loading} size="sm" className="w-full sm:w-auto">
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Running…
+              </>
+            ) : (
+              <>
+                <Scale className="h-4 w-4 mr-2" />
+                Run test
+              </>
+            )}
+          </Button>
 
           {analysisResult && (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Analysis Results</CardTitle>
-                  <Badge variant={analysisResult.isReportable ? 'default' : 'secondary'}>
-                    {analysisResult.isReportable ? 'REPORTABLE' : 'NON-REPORTABLE'}
-                  </Badge>
-                </div>
-                <CardDescription>
-                  Confidence: {(analysisResult.confidence * 100).toFixed(1)}%
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {analysisResult.reasoning.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold mb-2">Reasoning:</h4>
-                    <ul className="text-sm space-y-1">
-                      {analysisResult.reasoning.map((reason, index) => (
-                        <li key={index} className="flex items-start gap-2">
-                          <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                          {reason}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {analysisResult.warnings.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold mb-2">Warnings:</h4>
-                    <ul className="text-sm space-y-1">
-                      {analysisResult.warnings.map((warning, index) => (
-                        <li key={index} className="flex items-start gap-2">
-                          <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-                          {warning}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {analysisResult.recommendations.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold mb-2">Recommendations:</h4>
-                    <ul className="text-sm space-y-1">
-                      {analysisResult.recommendations.map((recommendation, index) => (
-                        <li key={index} className="flex items-start gap-2">
-                          <FileText className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                          {recommendation}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {analysisResult.glossaryMatches.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold mb-2">Matching Glossary Terms:</h4>
-                    <div className="space-y-2">
-                      {analysisResult.glossaryMatches.map((match, index) => (
-                        <div key={index} className="border rounded p-3">
-                          <div className="flex items-center gap-2 mb-1">
-                            <strong>{match.term}</strong>
-                            <Badge variant={getReportabilityBadgeVariant(match.reportability)}>
-                              {match.reportability.replace('_', ' ').toUpperCase()}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground">{match.definition}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {(analysisResult as any).jurisdictionAnalysis?.applicableJurisdictions?.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold mb-2">Applicable National Regimes:</h4>
-                    <div className="space-y-2">
-                      {(analysisResult as any).jurisdictionAnalysis.applicableJurisdictions.map((j: any, index: number) => (
-                        <div key={index} className="border rounded p-3">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Globe className="h-4 w-4" />
-                            <strong>{j.countryName}</strong>
-                            <Badge variant={j.isReportable ? 'default' : 'secondary'}>
-                              {j.sunshineActEquivalent}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground">{j.regimeName}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <div className="rounded-lg border bg-card p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Result</span>
+                <Badge variant={analysisResult.isReportable ? 'default' : 'secondary'}>
+                  {analysisResult.isReportable ? 'Reportable' : 'Excluded'}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Confidence {(analysisResult.confidence * 100).toFixed(0)}%
+              </p>
+              {analysisResult.reasoning.length > 0 && (
+                <ul className="text-xs space-y-1">
+                  {analysisResult.reasoning.map((reason, index) => (
+                    <li key={index} className="flex items-start gap-2">
+                      <CheckCircle className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" />
+                      {reason}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {analysisResult.warnings.length > 0 && (
+                <ul className="text-xs space-y-1">
+                  {analysisResult.warnings.map((warning, index) => (
+                    <li key={index} className="flex items-start gap-2 text-amber-800">
+                      <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                      {warning}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           )}
         </TabsContent>
       </Tabs>

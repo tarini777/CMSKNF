@@ -15,6 +15,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { CheckCircle, XCircle, Loader2, Link2 } from 'lucide-react'
 import { RecordWithPuf } from '@/types/cms'
+import AppliedRulesPanel from '@/components/AppliedRulesPanel'
+import FmvPanel from '@/components/FmvPanel'
 
 interface RecordDetailDialogProps {
   recordId: string | null
@@ -48,6 +50,8 @@ export default function RecordDetailDialog({
   const [reason, setReason] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [nppesMsg, setNppesMsg] = useState<string | null>(null)
+  const [verifyingNpi, setVerifyingNpi] = useState(false)
 
   useEffect(() => {
     if (!open || !recordId) {
@@ -84,6 +88,25 @@ export default function RecordDetailDialog({
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount)
+
+  const verifyNpi = async () => {
+    if (!record) return
+    setVerifyingNpi(true)
+    setNppesMsg(null)
+    try {
+      const res = await fetch('/api/nppes/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recordId: record.id }),
+      })
+      const data = await res.json()
+      setNppesMsg(data.success ? data.data.message : data.error)
+    } catch {
+      setNppesMsg('NPPES verification failed')
+    } finally {
+      setVerifyingNpi(false)
+    }
+  }
 
   const handleDecision = async (decision: 'approve' | 'reject') => {
     if (!record) return
@@ -134,15 +157,28 @@ export default function RecordDetailDialog({
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle>{record.coveredRecipientName}</DialogTitle>
-              <DialogDescription>
-                Record {record.recordId} · PUF-backed review for CMS Open Payments
+              <DialogTitle className="flex items-center gap-2 flex-wrap">
+                {record.coveredRecipientName}
+                <Badge variant={record.isReportable ? 'default' : 'secondary'} className="text-xs font-normal">
+                  {record.isReportable ? 'Reportable' : 'Excluded'}
+                </Badge>
+              </DialogTitle>
+              <DialogDescription className="font-mono text-xs">
+                {record.recordId} · {formatCurrency(record.totalAmountOfPaymentUsdollars)}
               </DialogDescription>
             </DialogHeader>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <DetailField label="Recipient ID" value={record.coveredRecipientId} />
               <DetailField label="NPI" value={record.coveredRecipientNpi || record.pufSummary?.coveredRecipientNpi} />
+              {(record.coveredRecipientNpi || record.pufSummary?.coveredRecipientNpi) && (
+                <div className="md:col-span-2 flex items-center gap-2">
+                  <Button type="button" variant="outline" size="sm" onClick={verifyNpi} disabled={verifyingNpi}>
+                    {verifyingNpi ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Verify NPI (NPPES)'}
+                  </Button>
+                  {nppesMsg && <span className="text-xs text-muted-foreground">{nppesMsg}</span>}
+                </div>
+              )}
               <DetailField label="Recipient Type" value={record.coveredRecipientType} />
               <DetailField label="Amount" value={formatCurrency(record.totalAmountOfPaymentUsdollars)} />
               <DetailField label="Payment Date" value={record.dateOfPayment} />
@@ -168,7 +204,7 @@ export default function RecordDetailDialog({
             {record.pufSummary?.hasLineage && (
               <div className="rounded-md border p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-sm">PUF Submission Fields</h4>
+                  <h4 className="font-medium text-sm">CMS export fields</h4>
                   <Badge variant="secondary">
                     {record.pufSummary.fieldCount} of {record.pufSummary.totalFields} populated
                   </Badge>
@@ -195,30 +231,20 @@ export default function RecordDetailDialog({
             )}
 
             {record.reason && (
-              <div className="rounded-md bg-muted p-3 text-sm">
-                <span className="font-medium">Rule engine: </span>
+              <p className="text-xs text-muted-foreground bg-muted rounded-md px-3 py-2 line-clamp-2">
                 {record.reason}
-              </div>
+              </p>
             )}
 
-            <div className="flex gap-2 flex-wrap">
-              <Badge variant={record.isReportable ? 'outline' : 'secondary'}>
-                {record.isReportable ? 'Reportable' : 'Non-Reportable'}
-              </Badge>
-              {record.humanDecision === 'approve' && (
-                <Badge className="bg-green-100 text-green-800">Approved</Badge>
-              )}
-              {record.humanDecision === 'reject' && <Badge variant="destructive">Rejected</Badge>}
-              {(!record.humanDecision || record.humanDecision === 'pending') && (
-                <Badge variant="secondary">Pending Review</Badge>
-              )}
-            </div>
+            <AppliedRulesPanel citations={record.ruleCitations} />
+
+            <FmvPanel recordId={record.id} />
 
             <div className="space-y-2">
-              <Label htmlFor="decision-reason">Decision notes (optional)</Label>
+              <Label htmlFor="decision-reason">Notes</Label>
               <Textarea
                 id="decision-reason"
-                placeholder="Add context for auditors..."
+                placeholder="Optional context…"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 rows={3}

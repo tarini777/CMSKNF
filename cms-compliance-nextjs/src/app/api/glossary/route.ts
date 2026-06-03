@@ -69,10 +69,23 @@ export async function GET(request: NextRequest) {
         }
         return NextResponse.json({ success: true, data: { regime } })
 
+      case 'cms-glossary': {
+        const cmsCategory = searchParams.get('cmsCategory') as import('@/data/cms-open-payments-glossary').CmsGlossaryCategory | null
+        const letter = searchParams.get('letter') || undefined
+        const terms = await glossaryService.getCmsOfficialGlossary({
+          cmsCategory: cmsCategory || undefined,
+          letter,
+        })
+        return NextResponse.json({
+          success: true,
+          data: { terms, meta: glossaryService.getCmsGlossaryMeta() },
+        })
+      }
+
       default:
         return NextResponse.json({
           success: false,
-          error: 'Invalid action. Supported: terms, search, rules, stats, countries, regime',
+          error: 'Invalid action. Supported: terms, search, rules, stats, countries, regime, cms-glossary',
         }, { status: 400 })
     }
   } catch (error) {

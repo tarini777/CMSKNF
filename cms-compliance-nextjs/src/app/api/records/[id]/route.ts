@@ -5,6 +5,7 @@ import {
   buildRecordWithPuf,
   RECORD_SPEND_INCLUDE,
 } from '@/lib/lineage/record-view-service'
+import { buildRecordRuleCitations } from '@/lib/rule-citation-service'
 
 export async function GET(
   request: NextRequest,
@@ -32,9 +33,17 @@ export async function GET(
       return NextResponse.json({ success: false, error: 'Record not found' }, { status: 404 })
     }
 
+    const ruleCitations = await buildRecordRuleCitations({
+      ...record,
+      spendEvent: record.spendEvent,
+    })
+
     return NextResponse.json({
       success: true,
-      data: buildRecordWithPuf(record, record.spendEvent),
+      data: {
+        ...buildRecordWithPuf(record, record.spendEvent),
+        ruleCitations,
+      },
     })
   } catch (error) {
     console.error('Error fetching record:', error)

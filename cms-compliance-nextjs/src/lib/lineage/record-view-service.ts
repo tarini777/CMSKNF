@@ -19,6 +19,8 @@ export interface RecordPufSummary {
   pufLineId?: string
 }
 
+import type { RecordRuleCitations } from '@/lib/rule-citation-service'
+
 export interface RecordWithPuf extends CMSRecord {
   spendEventId?: string | null
   pufSummary?: RecordPufSummary
@@ -28,6 +30,7 @@ export interface RecordWithPuf extends CMSRecord {
     dataSourceKey?: string
     dedupKey?: string
   }
+  ruleCitations?: RecordRuleCitations
 }
 
 export function extractCmsRecordFieldsFromCanonical(
@@ -59,6 +62,8 @@ type SpendInclude = {
   sourceSystem: string
   dedupKey: string
   sourceTransactionId: string
+  rulesEngineVersion?: string | null
+  ruleInputSnapshot?: unknown
   dataSource?: { sourceKey: string; sourceName: string } | null
   generalLine?: { id: string; pufFields: unknown; changeType: string; coveredRecipientNpi: string | null } | null
   researchLine?: { id: string; pufFields: unknown } | null

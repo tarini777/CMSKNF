@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import Dashboard from '@/components/Dashboard'
+import { PersonaProvider } from '@/context/PersonaContext'
 
 export const metadata: Metadata = {
   title: 'Knowledge Nexus Framework™ - CMS Compliance Platform',
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 }
 
 export default function Home() {
-  return <Dashboard />
+  return (
+    <PersonaProvider>
+      <Dashboard />
+    </PersonaProvider>
+  )
 }

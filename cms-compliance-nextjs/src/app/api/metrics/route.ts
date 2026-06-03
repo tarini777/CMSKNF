@@ -35,6 +35,9 @@ export async function GET() {
       regulatoryRules: activeRules,
       processingRate: Math.floor(totalRecords / Math.max(1, totalSessions)) || 0,
       errorRate,
+      pendingReview: pendingDecisions,
+      reportableCount: reportableRecords,
+      sessionCount: totalSessions,
       timestamp: new Date().toISOString()
     }
 

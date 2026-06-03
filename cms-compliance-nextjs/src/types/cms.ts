@@ -127,6 +127,7 @@ export interface RecordWithPuf extends CMSRecord {
     dataSourceKey?: string
     dedupKey?: string
   }
+  ruleCitations?: import('@/lib/rule-citation-service').RecordRuleCitations
 }
 
 export interface CompanyRule {
@@ -232,6 +233,9 @@ export interface DashboardMetrics {
   regulatoryRules: number
   processingRate: number
   errorRate: number
+  pendingReview: number
+  reportableCount: number
+  sessionCount: number
   timestamp: string
 }
 
