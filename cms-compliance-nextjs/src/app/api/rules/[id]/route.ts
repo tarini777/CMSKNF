@@ -5,11 +5,12 @@ import { getPerformedBy } from '@/lib/request-user'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const rule = await prisma.companyRule.findUnique({
-      where: { id: params.id }
+      where: { id }
     })
 
     if (!rule) {
@@ -34,18 +35,19 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body = await request.json()
-    
-    const existing = await prisma.companyRule.findUnique({ where: { id: params.id } })
+
+    const existing = await prisma.companyRule.findUnique({ where: { id } })
     if (!existing) {
       return NextResponse.json({ success: false, error: 'Rule not found' }, { status: 404 })
     }
 
     const rule = await prisma.companyRule.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...body,
         updatedBy: body.updatedBy || (await getPerformedBy()),
@@ -77,22 +79,23 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const existing = await prisma.companyRule.findUnique({ where: { id: params.id } })
+    const { id } = await params
+    const existing = await prisma.companyRule.findUnique({ where: { id } })
     if (!existing) {
       return NextResponse.json({ success: false, error: 'Rule not found' }, { status: 404 })
     }
 
     await prisma.companyRule.delete({
-      where: { id: params.id },
+      where: { id },
     })
 
     await createAuditLog({
       action: 'delete',
       entityType: 'rule',
-      entityId: params.id,
+      entityId: id,
       oldValues: { name: existing.name },
       performedBy: await getPerformedBy(),
     })

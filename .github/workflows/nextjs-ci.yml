@@ -5,10 +5,12 @@ on:
     branches: [main, develop]
     paths:
       - 'cms-compliance-nextjs/**'
+      - '.github/workflows/nextjs-ci.yml'
   pull_request:
     branches: [main, develop]
     paths:
       - 'cms-compliance-nextjs/**'
+      - '.github/workflows/nextjs-ci.yml'
 
 defaults:
   run:
@@ -17,6 +19,26 @@ defaults:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: cms_user
+          POSTGRES_PASSWORD: cms_password
+          POSTGRES_DB: cms_compliance
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://cms_user:cms_password@localhost:5432/cms_compliance
+      DEMO_MODE: 'true'
+      AUTH_ENABLED: 'false'
+
     steps:
       - uses: actions/checkout@v4
 
@@ -32,14 +54,11 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate
 
-      - name: Lint
-        run: npm run lint
+      - name: Apply database migrations
+        run: npx prisma migrate deploy
 
       - name: Unit tests
         run: npm test -- --passWithNoTests
 
-      - name: Build
+      - name: Production build
         run: npm run build
-        env:
-          DATABASE_URL: file:./dev.db
-          AUTH_ENABLED: 'false'

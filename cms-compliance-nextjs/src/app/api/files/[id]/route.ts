@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { fileStorage } from '@/lib/file-storage'
 import { readFile } from 'fs/promises'
-import { join } from 'path'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const fileId = params.id
+    const { id: fileId } = await params
     const file = await fileStorage.getFileById(fileId)
 
     if (!file) {
@@ -18,7 +17,6 @@ export async function GET(
       }, { status: 404 })
     }
 
-    // Read file content
     const fileContent = await readFile(file.filePath, 'utf-8')
 
     return new NextResponse(fileContent, {
@@ -42,10 +40,10 @@ export async function GET(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const fileId = params.id
+    const { id: fileId } = await params
     const result = await fileStorage.deleteFile(fileId)
 
     if (!result.success) {
