@@ -38,6 +38,7 @@ jobs:
       DATABASE_URL: postgresql://cms_user:cms_password@localhost:5432/cms_compliance
       DEMO_MODE: 'true'
       AUTH_ENABLED: 'false'
+      HUSKY: '0'
 
     steps:
       - uses: actions/checkout@v4

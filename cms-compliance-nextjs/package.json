@@ -23,7 +23,7 @@
     "job:fmv-sync": "tsx scripts/sync-fmv-rates.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky install",
+    "prepare": "node scripts/prepare-husky.mjs",
     "postinstall": "prisma generate"
   },
   "prisma": {
