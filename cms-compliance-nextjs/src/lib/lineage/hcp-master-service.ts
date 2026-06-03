@@ -196,3 +196,19 @@ export function buildDedupKey(
   ]
   return createHash('sha256').update(parts.join('|')).digest('hex').slice(0, 32)
 }
+
+/** Cross-source fingerprint — ignores sourceKey and upstream record_id. */
+export function buildCrossSourceDedupKey(
+  puf: CmsGeneralPufFields,
+  amount: number,
+  date?: string
+): string {
+  const parts = [
+    (puf.covered_recipient_npi || puf.covered_recipient_profile_id || '').trim(),
+    (puf.covered_recipient_last_name || '').trim().toLowerCase(),
+    date || puf.date_of_payment || '',
+    (puf.nature_of_payment_or_transfer_of_value || '').trim().toLowerCase(),
+    amount.toFixed(2),
+  ]
+  return createHash('sha256').update(parts.join('|')).digest('hex').slice(0, 32)
+}

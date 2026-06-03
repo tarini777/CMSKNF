@@ -1,4 +1,5 @@
 import { CONCUR_CONNECTOR, enrichConcurCanonical } from './concur'
+import { CVENT_CONNECTOR, enrichCventCanonical } from './cvent'
 import type {
   ConnectorDefinition,
   ConnectorMapResult,
@@ -13,6 +14,7 @@ import {
 
 export const CONNECTOR_REGISTRY: Record<SupportedConnectorKey, ConnectorDefinition> = {
   concur: CONCUR_CONNECTOR,
+  cvent: CVENT_CONNECTOR,
   veeva_crm: VEEVA_CRM_CONNECTOR,
   vendor_med_ed: VENDOR_MED_ED_CONNECTOR,
   tmc: TMC_CONNECTOR,
@@ -63,6 +65,7 @@ export function mapConnectorPayload(
 
   let enriched = canonicalRow
   if (sourceKey === 'concur') enriched = enrichConcurCanonical(enriched)
+  if (sourceKey === 'cvent') enriched = enrichCventCanonical(enriched)
   if (sourceKey === 'veeva_crm') enriched = enrichVeevaCanonical(enriched)
   if (sourceKey === 'vendor_med_ed' || sourceKey === 'tmc') {
     enriched = enrichVendorCanonical(enriched, sourceKey)
@@ -72,6 +75,7 @@ export function mapConnectorPayload(
     enriched.external_transaction_id ||
     enriched.record_id ||
     pickUpstream(upstreamPayload, 'ExpenseId') ||
+    pickUpstream(upstreamPayload, 'RegistrationId') ||
     pickUpstream(upstreamPayload, 'Call_ID') ||
     pickUpstream(upstreamPayload, 'InvoiceNumber') ||
     `${sourceKey}_${Date.now()}`

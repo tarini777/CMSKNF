@@ -19,6 +19,8 @@ model CMSRecord {
   coveredRecipientType String
   teachingHospitalId String?
   teachingHospitalName String?
+  teachingHospitalCcn String?
+  coveredRecipientNpi String?
   physicianProfileId String?
   physicianFirstName String?
   physicianMiddleName String?
@@ -61,6 +63,9 @@ model CMSRecord {
   delayInPublicationIndicator String?
   disputeStatusForPublication String?
   productIndicator String?
+  relatedProductIndicator String?
+  changeType String? @default("N")
+  sourceSystem String?
   nameOfAssociatedCoveredDrugOrBiological1 String?
   nameOfAssociatedCoveredDrugOrBiological2 String?
   nameOfAssociatedCoveredDrugOrBiological3 String?
@@ -312,7 +317,9 @@ model SpendEvent {
   hcpMasterId           String?
   hcpMaster             HcpMaster? @relation(fields: [hcpMasterId], references: [id])
   dedupKey              String
+  crossSourceDedupKey   String?
   dedupClusterId        String?
+  dedupReviewStatus     String   @default("none")
   isPrimaryLine         Boolean  @default(true)
   amountUsd             Float
   paymentCurrency       String   @default("USD")
@@ -336,7 +343,9 @@ model SpendEvent {
   ownershipLine CmsOwnershipPaymentLine?
 
   @@index([dedupKey])
+  @@index([crossSourceDedupKey])
   @@index([dedupClusterId])
+  @@index([dedupReviewStatus])
   @@index([programYear])
   @@map("spend_events")
 }

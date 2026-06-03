@@ -36,6 +36,7 @@ import AuditLogDashboard from './AuditLogDashboard'
 import ConnectivityDashboard from './ConnectivityDashboard'
 import LineageDashboard from './LineageDashboard'
 import ConnectorsDashboard from './ConnectorsDashboard'
+import DedupDashboard from './DedupDashboard'
 import TransparencyDashboard from './TransparencyDashboard'
 import AuthHeader from './AuthHeader'
 
@@ -389,6 +390,7 @@ export default function Dashboard() {
 
           <TabsContent value="lineage" className="space-y-6">
             <LineageDashboard />
+            <DedupDashboard />
             <ConnectorsDashboard />
           </TabsContent>
 

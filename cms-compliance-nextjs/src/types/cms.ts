@@ -7,6 +7,8 @@ export interface CMSRecord {
   coveredRecipientType: string
   teachingHospitalId?: string
   teachingHospitalName?: string
+  teachingHospitalCcn?: string
+  coveredRecipientNpi?: string
   physicianProfileId?: string
   physicianFirstName?: string
   physicianMiddleName?: string
@@ -49,6 +51,9 @@ export interface CMSRecord {
   delayInPublicationIndicator?: string
   disputeStatusForPublication?: string
   productIndicator?: string
+  relatedProductIndicator?: string
+  changeType?: string
+  sourceSystem?: string
   nameOfAssociatedCoveredDrugOrBiological1?: string
   nameOfAssociatedCoveredDrugOrBiological2?: string
   nameOfAssociatedCoveredDrugOrBiological3?: string
@@ -95,6 +100,33 @@ export interface CMSRecord {
   // Relations
   reviewSessionId?: string
   reviewSession?: ReviewSession
+  spendEventId?: string | null
+}
+
+/** Record enriched with PUF line data — returned by /api/records when lineage exists. */
+export interface RecordPufSummary {
+  fileType: 'general' | 'research' | 'ownership'
+  fieldCount: number
+  totalFields: number
+  recordId: string
+  changeType?: string
+  coveredRecipientNpi?: string
+  teachingHospitalCcn?: string
+  hasLineage: boolean
+  spendEventId?: string
+  sourceSystem?: string
+  sourceTransactionId?: string
+  pufLineId?: string
+}
+
+export interface RecordWithPuf extends CMSRecord {
+  pufSummary?: RecordPufSummary
+  pufFields?: Record<string, unknown>
+  lineage?: {
+    dataSourceName?: string
+    dataSourceKey?: string
+    dedupKey?: string
+  }
 }
 
 export interface CompanyRule {

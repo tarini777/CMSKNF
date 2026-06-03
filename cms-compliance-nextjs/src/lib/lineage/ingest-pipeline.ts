@@ -8,12 +8,15 @@ import {
   mapRawToResearchPuf,
 } from '@/lib/lineage/puf-field-mapper'
 import {
+  buildCrossSourceDedupKey,
   buildDedupKey,
   getDataSourceByKey,
   hashPayload,
   hcpInputFromGeneralPuf,
   resolveOrCreateHcpMaster,
 } from '@/lib/lineage/hcp-master-service'
+import { assignDedupClusterForSpendEvent } from '@/lib/lineage/dedup-cluster-service'
+import { extractCmsRecordFieldsFromCanonical } from '@/lib/lineage/record-view-service'
 
 export const RULES_ENGINE_VERSION = 'transparency-rules-1.0'
 export const NORMALIZATION_VERSION = 'cms-puf-mapper-2025-01'
@@ -93,6 +96,11 @@ export async function ingestSourceRow(input: IngestRowInput): Promise<IngestRowR
     amount,
     generalPuf.date_of_payment
   )
+  const crossSourceDedupKey = buildCrossSourceDedupKey(
+    generalPuf,
+    amount,
+    generalPuf.date_of_payment
+  )
 
   const ruleSnapshot = buildRuleInputSnapshot(input.rawRow, input.analysis)
 
@@ -102,7 +110,9 @@ export async function ingestSourceRow(input: IngestRowInput): Promise<IngestRowR
       sourceTransactionId: sourceTransaction.id,
       hcpMasterId: hcpMaster?.id,
       dedupKey,
+      crossSourceDedupKey,
       dedupClusterId: dedupKey,
+      dedupReviewStatus: 'none',
       isPrimaryLine: true,
       amountUsd: amount,
       paymentCurrency: input.analysis.paymentCurrency || 'USD',
@@ -120,10 +130,23 @@ export async function ingestSourceRow(input: IngestRowInput): Promise<IngestRowR
     },
   })
 
+  await assignDedupClusterForSpendEvent(
+    spendEvent.id,
+    crossSourceDedupKey,
+    dataSource.sourceKey
+  )
+
   if (input.cmsRecordId) {
+    const pufSync = extractCmsRecordFieldsFromCanonical(input.rawRow, dataSource.sourceKey)
+    if (category === 'general' && hcpMaster?.npi) {
+      pufSync.coveredRecipientNpi = hcpMaster.npi
+    }
     await prisma.cMSRecord.update({
       where: { id: input.cmsRecordId },
-      data: { spendEventId: spendEvent.id },
+      data: {
+        spendEventId: spendEvent.id,
+        ...pufSync,
+      },
     })
   }
 

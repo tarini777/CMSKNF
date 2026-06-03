@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { PaginatedResponse } from '@/types/cms'
 import { buildContainsSearch } from '@/lib/sqlite-search'
+import {
+  buildRecordWithPuf,
+  RECORD_SPEND_INCLUDE,
+} from '@/lib/lineage/record-view-service'
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,13 +13,13 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const perPage = parseInt(searchParams.get('per_page') || '20')
     const filter = searchParams.get('filter') || 'all'
+    const category = searchParams.get('category') || ''
     const search = searchParams.get('search') || ''
 
     const skip = (page - 1) * perPage
 
-    // Build where clause based on filters
-    let whereClause: any = {}
-    
+    let whereClause: Record<string, unknown> = {}
+
     if (filter === 'reportable') {
       whereClause.isReportable = true
     } else if (filter === 'non_reportable') {
@@ -28,12 +32,23 @@ export async function GET(request: NextRequest) {
       whereClause.humanDecision = 'reject'
     }
 
-    // Add search functionality
+    if (category && category !== 'all') {
+      whereClause.cmsReportCategory = category
+    }
+
     if (search.trim()) {
       whereClause = {
         ...whereClause,
         ...buildContainsSearch(
-          ['coveredRecipientName', 'coveredRecipientId', 'physicianFirstName', 'physicianLastName'],
+          [
+            'coveredRecipientName',
+            'coveredRecipientId',
+            'coveredRecipientNpi',
+            'physicianFirstName',
+            'physicianLastName',
+            'sourceSystem',
+            'recordId',
+          ],
           search
         ),
       }
@@ -50,47 +65,58 @@ export async function GET(request: NextRequest) {
             select: {
               sessionId: true,
               filename: true,
-              uploadTime: true
-            }
-          }
-        }
+              uploadTime: true,
+            },
+          },
+          spendEvent: {
+            include: RECORD_SPEND_INCLUDE,
+          },
+        },
       }),
-      prisma.cMSRecord.count({ where: whereClause })
+      prisma.cMSRecord.count({ where: whereClause }),
     ])
 
     const totalPages = Math.ceil(total / perPage)
+    const enriched = records.map((record) =>
+      buildRecordWithPuf(record, record.spendEvent)
+    )
 
     const response: PaginatedResponse = {
       success: true,
-      data: records,
+      data: enriched,
       pagination: {
         page,
         perPage,
         total,
-        totalPages
-      }
+        totalPages,
+      },
     }
 
     return NextResponse.json(response)
   } catch (error) {
     console.error('Error fetching records:', error)
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to fetch records'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to fetch records',
+      },
+      { status: 500 }
+    )
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    
-    // Validate required fields
+
     if (!body.coveredRecipientId || !body.coveredRecipientName) {
-      return NextResponse.json({
-        success: false,
-        error: 'Missing required fields: coveredRecipientId, coveredRecipientName'
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Missing required fields: coveredRecipientId, coveredRecipientName',
+        },
+        { status: 400 }
+      )
     }
 
     const record = await prisma.cMSRecord.create({
@@ -102,19 +128,22 @@ export async function POST(request: NextRequest) {
         totalAmountOfPaymentUsdollars: parseFloat(body.totalAmountOfPaymentUsdollars) || 0,
         isReportable: body.isReportable || false,
         humanDecision: body.humanDecision || 'pending',
-        ...body
-      }
+        ...body,
+      },
     })
 
     return NextResponse.json({
       success: true,
-      data: record
+      data: record,
     })
   } catch (error) {
     console.error('Error creating record:', error)
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to create record'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to create record',
+      },
+      { status: 500 }
+    )
   }
 }

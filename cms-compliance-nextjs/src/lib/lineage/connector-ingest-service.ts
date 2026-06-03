@@ -11,6 +11,7 @@ import {
 import type { ConnectorIngestResult, ConnectorMapResult } from '@/lib/lineage/connectors/types'
 import { ingestSourceRow } from '@/lib/lineage/ingest-pipeline'
 import { normalizeRawRow } from '@/lib/lineage/puf-field-mapper'
+import { extractCmsRecordFieldsFromCanonical } from '@/lib/lineage/record-view-service'
 
 export function buildDraftRecordFromCanonicalRow(
   canonicalRow: Record<string, string>,
@@ -107,6 +108,7 @@ export async function ingestConnectorPayload(
   let cmsRecordId: string | undefined
 
   if (options.createCmsRecord !== false) {
+    const pufFields = extractCmsRecordFieldsFromCanonical(mapResult.canonicalRow, sourceKey)
     const record = await prisma.cMSRecord.create({
       data: {
         recordId: draft.recordId,
@@ -114,6 +116,14 @@ export async function ingestConnectorPayload(
         coveredRecipientName: draft.coveredRecipientName,
         coveredRecipientType: draft.coveredRecipientType,
         teachingHospitalName: draft.teachingHospitalName,
+        teachingHospitalCcn: pufFields.teachingHospitalCcn,
+        coveredRecipientNpi: pufFields.coveredRecipientNpi,
+        physicianProfileId: pufFields.physicianProfileId,
+        changeType: pufFields.changeType,
+        relatedProductIndicator: pufFields.relatedProductIndicator,
+        sourceSystem: sourceKey,
+        nameOfAssociatedCoveredDrugOrBiological1: pufFields.nameOfAssociatedCoveredDrugOrBiological1,
+        ndcOfAssociatedCoveredDrugOrBiological1: pufFields.ndcOfAssociatedCoveredDrugOrBiological1,
         totalAmountOfPaymentUsdollars: analysis.reportingCurrencyValue ?? draft.totalAmountOfPaymentUsdollars,
         dateOfPayment: draft.dateOfPayment,
         formOfPaymentOrTransferOfValue: draft.formOfPaymentOrTransferOfValue,

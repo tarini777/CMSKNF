@@ -1,6 +1,6 @@
 /** Connector field-mapping types for upstream systems → canonical CMS raw row. */
 
-export type SupportedConnectorKey = 'concur' | 'veeva_crm' | 'vendor_med_ed' | 'tmc'
+export type SupportedConnectorKey = 'concur' | 'veeva_crm' | 'vendor_med_ed' | 'tmc' | 'cvent'
 
 export interface ConnectorFieldMapping {
   /** Upstream field name (case-insensitive match) */

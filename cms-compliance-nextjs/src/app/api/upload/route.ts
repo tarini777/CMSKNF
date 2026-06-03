@@ -8,6 +8,7 @@ import { createAuditLog } from '@/lib/audit-log'
 import { getPerformedBy } from '@/lib/request-user'
 import { recalculateAggregatesForSession } from '@/lib/aggregate-threshold-service'
 import { ingestSourceRow } from '@/lib/lineage/ingest-pipeline'
+import { extractCmsRecordFieldsFromCanonical } from '@/lib/lineage/record-view-service'
 import type { TransparencyAnalysis } from '@/lib/transparency-rules-engine'
 
 function csvField(recordData: Record<string, string>, ...keys: string[]): string {
@@ -161,6 +162,8 @@ export async function POST(request: NextRequest) {
           baseAnalysis
         )) as TransparencyAnalysis
 
+        const pufSync = extractCmsRecordFieldsFromCanonical(recordData, 'csv_upload')
+
         const record = await prisma.cMSRecord.create({
           data: {
             recordId: draftRecord.recordId,
@@ -168,6 +171,14 @@ export async function POST(request: NextRequest) {
             coveredRecipientName: draftRecord.coveredRecipientName,
             coveredRecipientType: draftRecord.coveredRecipientType,
             teachingHospitalName: draftRecord.teachingHospitalName || undefined,
+            teachingHospitalCcn: pufSync.teachingHospitalCcn,
+            coveredRecipientNpi: pufSync.coveredRecipientNpi,
+            physicianProfileId: pufSync.physicianProfileId,
+            changeType: pufSync.changeType,
+            relatedProductIndicator: pufSync.relatedProductIndicator,
+            sourceSystem: 'csv_upload',
+            nameOfAssociatedCoveredDrugOrBiological1: pufSync.nameOfAssociatedCoveredDrugOrBiological1,
+            ndcOfAssociatedCoveredDrugOrBiological1: pufSync.ndcOfAssociatedCoveredDrugOrBiological1,
             totalAmountOfPaymentUsdollars: analysis.reportingCurrencyValue ?? amount,
             dateOfPayment: draftRecord.dateOfPayment,
             formOfPaymentOrTransferOfValue: draftRecord.formOfPaymentOrTransferOfValue,

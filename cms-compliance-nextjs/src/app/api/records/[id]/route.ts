@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createAuditLog } from '@/lib/audit-log'
+import {
+  buildRecordWithPuf,
+  RECORD_SPEND_INCLUDE,
+} from '@/lib/lineage/record-view-service'
 
 export async function GET(
   request: NextRequest,
@@ -18,6 +22,9 @@ export async function GET(
             uploadTime: true,
           },
         },
+        spendEvent: {
+          include: RECORD_SPEND_INCLUDE,
+        },
       },
     })
 
@@ -25,7 +32,10 @@ export async function GET(
       return NextResponse.json({ success: false, error: 'Record not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ success: true, data: record })
+    return NextResponse.json({
+      success: true,
+      data: buildRecordWithPuf(record, record.spendEvent),
+    })
   } catch (error) {
     console.error('Error fetching record:', error)
     return NextResponse.json({ success: false, error: 'Failed to fetch record' }, { status: 500 })

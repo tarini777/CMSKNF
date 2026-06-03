@@ -7,40 +7,40 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { 
-  Search, 
-  Filter, 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
+import {
+  Search,
+  CheckCircle,
+  XCircle,
+  Clock,
   Eye,
   ChevronLeft,
   ChevronRight,
-  Download
+  Download,
 } from 'lucide-react'
-import { CMSRecord, PaginatedResponse } from '@/types/cms'
+import { PaginatedResponse, RecordWithPuf } from '@/types/cms'
 import RecordDetailDialog from './RecordDetailDialog'
 
 interface RecordsTableProps {
-  onRecordSelect?: (record: CMSRecord) => void
+  onRecordSelect?: (record: RecordWithPuf) => void
 }
 
 export default function RecordsTable({ onRecordSelect }: RecordsTableProps) {
-  const [records, setRecords] = useState<CMSRecord[]>([])
+  const [records, setRecords] = useState<RecordWithPuf[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [viewRecord, setViewRecord] = useState<CMSRecord | null>(null)
+  const [viewRecordId, setViewRecordId] = useState<string | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
   const [bulkLoading, setBulkLoading] = useState(false)
   const [pagination, setPagination] = useState({
     page: 1,
     perPage: 20,
     total: 0,
-    totalPages: 0
+    totalPages: 0,
   })
   const [filters, setFilters] = useState({
     search: '',
-    filter: 'all'
+    filter: 'all',
+    category: 'all',
   })
   const [selectedRecords, setSelectedRecords] = useState<string[]>([])
 
@@ -55,11 +55,12 @@ export default function RecordsTable({ onRecordSelect }: RecordsTableProps) {
         page: pagination.page.toString(),
         per_page: pagination.perPage.toString(),
         ...(filters.search && { search: filters.search }),
-        ...(filters.filter !== 'all' && { filter: filters.filter })
+        ...(filters.filter !== 'all' && { filter: filters.filter }),
+        ...(filters.category !== 'all' && { category: filters.category }),
       })
 
       const response = await fetch(`/api/records?${params}`)
-      const data: PaginatedResponse = await response.json()
+      const data: PaginatedResponse<RecordWithPuf> = await response.json()
 
       if (data.success) {
         setRecords(data.data)
@@ -68,7 +69,7 @@ export default function RecordsTable({ onRecordSelect }: RecordsTableProps) {
       } else {
         setError('Failed to fetch records')
       }
-    } catch (err) {
+    } catch {
       setError('Network error')
     } finally {
       setLoading(false)
@@ -76,20 +77,23 @@ export default function RecordsTable({ onRecordSelect }: RecordsTableProps) {
   }
 
   const handleSearch = (value: string) => {
-    setFilters(prev => ({ ...prev, search: value }))
-    setPagination(prev => ({ ...prev, page: 1 }))
+    setFilters((prev) => ({ ...prev, search: value }))
+    setPagination((prev) => ({ ...prev, page: 1 }))
   }
 
   const handleFilterChange = (value: string) => {
-    setFilters(prev => ({ ...prev, filter: value }))
-    setPagination(prev => ({ ...prev, page: 1 }))
+    setFilters((prev) => ({ ...prev, filter: value }))
+    setPagination((prev) => ({ ...prev, page: 1 }))
+  }
+
+  const handleCategoryChange = (value: string) => {
+    setFilters((prev) => ({ ...prev, category: value }))
+    setPagination((prev) => ({ ...prev, page: 1 }))
   }
 
   const handleSelectRecord = (recordId: string) => {
-    setSelectedRecords(prev => 
-      prev.includes(recordId) 
-        ? prev.filter(id => id !== recordId)
-        : [...prev, recordId]
+    setSelectedRecords((prev) =>
+      prev.includes(recordId) ? prev.filter((id) => id !== recordId) : [...prev, recordId]
     )
   }
 
@@ -97,39 +101,68 @@ export default function RecordsTable({ onRecordSelect }: RecordsTableProps) {
     if (selectedRecords.length === records.length) {
       setSelectedRecords([])
     } else {
-      setSelectedRecords(records.map(r => r.id))
+      setSelectedRecords(records.map((r) => r.id))
     }
   }
 
-  const getStatusBadge = (record: CMSRecord) => {
+  const getStatusBadge = (record: RecordWithPuf) => {
     if (record.humanDecision === 'approve') {
-      return <Badge variant="default" className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />Approved</Badge>
-    } else if (record.humanDecision === 'reject') {
-      return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" />Rejected</Badge>
-    } else {
-      return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />Pending</Badge>
+      return (
+        <Badge variant="default" className="bg-green-100 text-green-800">
+          <CheckCircle className="w-3 h-3 mr-1" />
+          Approved
+        </Badge>
+      )
     }
+    if (record.humanDecision === 'reject') {
+      return (
+        <Badge variant="destructive">
+          <XCircle className="w-3 h-3 mr-1" />
+          Rejected
+        </Badge>
+      )
+    }
+    return (
+      <Badge variant="secondary">
+        <Clock className="w-3 h-3 mr-1" />
+        Pending
+      </Badge>
+    )
   }
 
-  const getReportabilityBadge = (record: CMSRecord) => {
-    return record.isReportable 
-      ? <Badge variant="outline" className="border-blue-200 text-blue-800">Reportable</Badge>
-      : <Badge variant="outline" className="border-orange-200 text-orange-800">Non-Reportable</Badge>
+  const getReportabilityBadge = (record: RecordWithPuf) => {
+    return record.isReportable ? (
+      <Badge variant="outline" className="border-blue-200 text-blue-800">
+        Reportable
+      </Badge>
+    ) : (
+      <Badge variant="outline" className="border-orange-200 text-orange-800">
+        Non-Reportable
+      </Badge>
+    )
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount)
+  const getCategoryBadge = (record: RecordWithPuf) => {
+    const cat = record.pufSummary?.fileType || record.cmsReportCategory || 'general'
+    const labels: Record<string, string> = {
+      general: 'General',
+      research: 'Research',
+      ownership: 'Ownership',
+    }
+    return (
+      <Badge variant="outline" className="text-xs">
+        {labels[cat] || cat}
+      </Badge>
+    )
   }
 
-  const formatDate = (date: string | Date) => {
-    return new Date(date).toLocaleDateString()
-  }
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount)
 
-  const openRecordDetail = (record: CMSRecord) => {
-    setViewRecord(record)
+  const formatDate = (date: string | Date) => new Date(date).toLocaleDateString()
+
+  const openRecordDetail = (record: RecordWithPuf) => {
+    setViewRecordId(record.id)
     setDetailOpen(true)
     onRecordSelect?.(record)
   }
@@ -158,28 +191,33 @@ export default function RecordsTable({ onRecordSelect }: RecordsTableProps) {
     }
   }
 
+  const displayNpi = (record: RecordWithPuf) =>
+    record.coveredRecipientNpi || record.pufSummary?.coveredRecipientNpi || '—'
+
+  const displaySource = (record: RecordWithPuf) =>
+    record.sourceSystem || record.lineage?.dataSourceKey || record.pufSummary?.sourceSystem || '—'
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>CMS Records</CardTitle>
         <CardDescription>
-          Review and manage CMS compliance records
+          Review records with PUF submission fields and source lineage
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {/* Filters and Search */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
-              placeholder="Search records..."
+              placeholder="Search name, NPI, record ID, source..."
               value={filters.search}
               onChange={(e) => handleSearch(e.target.value)}
               className="pl-10"
             />
           </div>
           <Select value={filters.filter} onValueChange={handleFilterChange}>
-            <SelectTrigger className="w-full sm:w-48">
+            <SelectTrigger className="w-full sm:w-44">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
@@ -191,19 +229,37 @@ export default function RecordsTable({ onRecordSelect }: RecordsTableProps) {
               <SelectItem value="rejected">Rejected</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={filters.category} onValueChange={handleCategoryChange}>
+            <SelectTrigger className="w-full sm:w-40">
+              <SelectValue placeholder="CMS category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              <SelectItem value="general">General</SelectItem>
+              <SelectItem value="research">Research</SelectItem>
+              <SelectItem value="ownership">Ownership</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* Bulk Actions */}
         {selectedRecords.length > 0 && (
           <div className="flex items-center gap-2 mb-4 p-3 bg-muted rounded-lg">
-            <span className="text-sm font-medium">
-              {selectedRecords.length} record(s) selected
-            </span>
-            <Button size="sm" variant="outline" onClick={() => handleBulkAction('approve')} disabled={bulkLoading}>
+            <span className="text-sm font-medium">{selectedRecords.length} record(s) selected</span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleBulkAction('approve')}
+              disabled={bulkLoading}
+            >
               <CheckCircle className="w-4 h-4 mr-1" />
               Approve Selected
             </Button>
-            <Button size="sm" variant="outline" onClick={() => handleBulkAction('reject')} disabled={bulkLoading}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleBulkAction('reject')}
+              disabled={bulkLoading}
+            >
               <XCircle className="w-4 h-4 mr-1" />
               Reject Selected
             </Button>
@@ -214,19 +270,16 @@ export default function RecordsTable({ onRecordSelect }: RecordsTableProps) {
           </div>
         )}
 
-        {/* Table */}
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             <span className="ml-2 text-muted-foreground">Loading records...</span>
           </div>
         ) : error ? (
-          <div className="text-center py-8 text-destructive">
-            Error: {error}
-          </div>
+          <div className="text-center py-8 text-destructive">Error: {error}</div>
         ) : (
           <>
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -239,8 +292,12 @@ export default function RecordsTable({ onRecordSelect }: RecordsTableProps) {
                       />
                     </TableHead>
                     <TableHead>Recipient</TableHead>
+                    <TableHead>NPI</TableHead>
                     <TableHead>Amount</TableHead>
                     <TableHead>Date</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Source</TableHead>
+                    <TableHead>PUF</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Reportability</TableHead>
                     <TableHead>Actions</TableHead>
@@ -260,23 +317,29 @@ export default function RecordsTable({ onRecordSelect }: RecordsTableProps) {
                       <TableCell>
                         <div>
                           <div className="font-medium">{record.coveredRecipientName}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {record.coveredRecipientId}
-                          </div>
+                          <div className="text-sm text-muted-foreground">{record.recordId}</div>
                         </div>
                       </TableCell>
+                      <TableCell className="font-mono text-sm">{displayNpi(record)}</TableCell>
                       <TableCell className="font-medium">
                         {formatCurrency(record.totalAmountOfPaymentUsdollars)}
                       </TableCell>
                       <TableCell>
-                        {record.dateOfPayment ? formatDate(record.dateOfPayment) : '-'}
+                        {record.dateOfPayment ? formatDate(record.dateOfPayment) : '—'}
                       </TableCell>
+                      <TableCell>{getCategoryBadge(record)}</TableCell>
+                      <TableCell className="text-sm">{displaySource(record)}</TableCell>
                       <TableCell>
-                        {getStatusBadge(record)}
+                        {record.pufSummary?.hasLineage ? (
+                          <Badge variant="secondary" className="text-xs">
+                            {record.pufSummary.fieldCount}/{record.pufSummary.totalFields}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
+                        )}
                       </TableCell>
-                      <TableCell>
-                        {getReportabilityBadge(record)}
-                      </TableCell>
+                      <TableCell>{getStatusBadge(record)}</TableCell>
+                      <TableCell>{getReportabilityBadge(record)}</TableCell>
                       <TableCell>
                         <Button
                           size="sm"
@@ -294,18 +357,17 @@ export default function RecordsTable({ onRecordSelect }: RecordsTableProps) {
               </Table>
             </div>
 
-            {/* Pagination */}
             <div className="flex items-center justify-between mt-4">
               <div className="text-sm text-muted-foreground">
-                Showing {((pagination.page - 1) * pagination.perPage) + 1} to{' '}
-                {Math.min(pagination.page * pagination.perPage, pagination.total)} of{' '}
-                {pagination.total} records
+                Showing {(pagination.page - 1) * pagination.perPage + 1} to{' '}
+                {Math.min(pagination.page * pagination.perPage, pagination.total)} of {pagination.total}{' '}
+                records
               </div>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+                  onClick={() => setPagination((prev) => ({ ...prev, page: prev.page - 1 }))}
                   disabled={pagination.page === 1}
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -316,7 +378,7 @@ export default function RecordsTable({ onRecordSelect }: RecordsTableProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                  onClick={() => setPagination((prev) => ({ ...prev, page: prev.page + 1 }))}
                   disabled={pagination.page === pagination.totalPages}
                 >
                   <ChevronRight className="w-4 h-4" />
@@ -326,7 +388,7 @@ export default function RecordsTable({ onRecordSelect }: RecordsTableProps) {
           </>
         )}
         <RecordDetailDialog
-          record={viewRecord}
+          recordId={viewRecordId}
           open={detailOpen}
           onOpenChange={setDetailOpen}
           onDecisionSaved={fetchRecords}
