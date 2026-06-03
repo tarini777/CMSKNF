@@ -10,6 +10,7 @@ This folder is the canonical reference for **data architecture**, **lineage**, a
 | [LINEAGE_SCHEMA.md](./LINEAGE_SCHEMA.md) | Entity-relationship model, table definitions, indexes, and status lifecycles |
 | [CMS_PUF_MAPPING.md](./CMS_PUF_MAPPING.md) | Jan 2025 CMS Public Use File field alignment (general / research / ownership) |
 | [SOURCE_SYSTEMS.md](./SOURCE_SYSTEMS.md) | Ten source-system categories mapped to `DataSource` registry and ingest paths |
+| [CONNECTORS.md](./CONNECTORS.md) | Concur / Veeva / vendor connector field mappings and ingest API (Option 2) |
 | [init.sql](./init.sql) | PostgreSQL bootstrap for Knowledge Nexus microservices (`data_nexus` landing zone) |
 
 ## Runtime vs. reference schema

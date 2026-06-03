@@ -35,6 +35,7 @@ import DataAnalysisDashboard from './DataAnalysisDashboard'
 import AuditLogDashboard from './AuditLogDashboard'
 import ConnectivityDashboard from './ConnectivityDashboard'
 import LineageDashboard from './LineageDashboard'
+import ConnectorsDashboard from './ConnectorsDashboard'
 import TransparencyDashboard from './TransparencyDashboard'
 import AuthHeader from './AuthHeader'
 
@@ -388,6 +389,7 @@ export default function Dashboard() {
 
           <TabsContent value="lineage" className="space-y-6">
             <LineageDashboard />
+            <ConnectorsDashboard />
           </TabsContent>
 
           {/* Connectivity Tab (Phase 5) */}
