@@ -2,7 +2,7 @@ name: Knowledge Nexus Framework™ CI/CD
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, 'feat/**']
   pull_request:
     branches: [main, develop]
 
@@ -67,3 +67,4 @@ jobs:
           CI: 'true'
           DEMO_MODE: 'true'
           AUTH_ENABLED: 'false'
+          DATABASE_URL: postgresql://cms_user:cms_password@localhost:5432/cms_compliance

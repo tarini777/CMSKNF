@@ -2,15 +2,17 @@ name: CMS Compliance Next.js CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, 'feat/**']
     paths:
       - 'cms-compliance-nextjs/**'
       - '.github/workflows/nextjs-ci.yml'
+      - '.github/workflows/ci-cd.yml'
   pull_request:
     branches: [main, develop]
     paths:
       - 'cms-compliance-nextjs/**'
       - '.github/workflows/nextjs-ci.yml'
+      - '.github/workflows/ci-cd.yml'
 
 defaults:
   run:
@@ -73,3 +75,4 @@ jobs:
           CI: 'true'
           DEMO_MODE: 'true'
           AUTH_ENABLED: 'false'
+          DATABASE_URL: postgresql://cms_user:cms_password@localhost:5432/cms_compliance

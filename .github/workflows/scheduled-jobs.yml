@@ -15,33 +15,29 @@ jobs:
   aggregate-and-fmv:
     runs-on: ubuntu-latest
     env:
-      CRON_BASE_URL: ${{ vars.CRON_BASE_URL != '' && vars.CRON_BASE_URL || 'https://localhost:3000' }}
+      CRON_BASE_URL: ${{ vars.CRON_BASE_URL }}
       CRON_SECRET: ${{ secrets.CRON_SECRET }}
       PROGRAM_YEAR: ${{ github.event.inputs.programYear || '' }}
 
     steps:
-      - name: Skip when CRON_SECRET is not configured
-        if: secrets.CRON_SECRET == ''
+      # secrets.* cannot appear in job/step if: expressions — check in shell instead
+      - name: Run aggregate recalculation and FMV sync
         run: |
-          echo "::warning::CRON_SECRET is not configured — skipping scheduled jobs."
-          echo "Add CRON_SECRET in repo Settings → Secrets and variables → Actions."
-
-      - name: Run aggregate recalculation job
-        if: secrets.CRON_SECRET != ''
-        run: |
+          if [ -z "${CRON_SECRET}" ]; then
+            echo "::warning::CRON_SECRET is not configured — skipping scheduled jobs."
+            echo "Add CRON_SECRET in Settings → Secrets and variables → Actions."
+            exit 0
+          fi
+          BASE_URL="${CRON_BASE_URL:-https://localhost:3000}"
           BODY='{"cronSecret":"'"$CRON_SECRET"'"}'
           if [ -n "$PROGRAM_YEAR" ]; then
             BODY=$(node -e "console.log(JSON.stringify({cronSecret:process.env.CRON_SECRET,programYear:process.env.PROGRAM_YEAR}))")
           fi
-          curl -sf -X POST "$CRON_BASE_URL/api/jobs/aggregate" \
+          curl -sf -X POST "$BASE_URL/api/jobs/aggregate" \
             -H "Content-Type: application/json" \
             -H "x-cron-secret: $CRON_SECRET" \
             -d "$BODY"
-
-      - name: Sync FMV rates
-        if: secrets.CRON_SECRET != ''
-        run: |
-          curl -sf -X POST "$CRON_BASE_URL/api/connectors/fmv/sync" \
+          curl -sf -X POST "$BASE_URL/api/connectors/fmv/sync" \
             -H "Content-Type: application/json" \
             -H "x-cron-secret: $CRON_SECRET" \
             -d '{"cronSecret":"'"$CRON_SECRET"'","sourceKey":"fmv_engine","rates":[]}'
