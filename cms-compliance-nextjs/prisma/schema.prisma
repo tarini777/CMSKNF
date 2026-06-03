@@ -109,6 +109,8 @@ model CMSRecord {
   // Relations
   reviewSessionId String?
   reviewSession ReviewSession? @relation(fields: [reviewSessionId], references: [id])
+  spendEventId String? @unique
+  spendEvent SpendEvent? @relation(fields: [spendEventId], references: [id])
   
   @@map("cms_records")
 }
@@ -222,4 +224,210 @@ model StoredFile {
   updatedAt   DateTime @updatedAt
   
   @@map("stored_files")
+}
+
+// ---------------------------------------------------------------------------
+// Lineage & CMS PUF submission models (Jan 2025 data dictionary alignment)
+// ---------------------------------------------------------------------------
+
+model DataSource {
+  id               String   @id @default(cuid())
+  sourceKey        String   @unique
+  sourceName       String
+  sourceCategory   String   // financial | crm | travel | clinical | vendor | mdm | upload
+  connectorVersion String   @default("1.0")
+  isActive         Boolean  @default(true)
+  config           Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  transactions SourceTransaction[]
+  spendEvents  SpendEvent[]
+
+  @@map("data_sources")
+}
+
+model HcpMaster {
+  id                   String   @id @default(cuid())
+  masterKey            String   @unique
+  npi                  String?
+  cmsProfileId         String?
+  firstName            String?
+  middleName           String?
+  lastName             String?
+  nameSuffix           String?
+  fullName             String?
+  specialty            String?
+  primaryType          String?
+  coveredRecipientType String?
+  addressLine1         String?
+  addressLine2         String?
+  city                 String?
+  state                String?
+  zipCode              String?
+  country              String?
+  province             String?
+  postalCode           String?
+  licenseStateCodes    Json?
+  teachingHospitalId   String?
+  teachingHospitalName String?
+  teachingHospitalCcn  String?
+  matchStatus          String   @default("pending")
+  sourceCrosswalk      Json?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  spendEvents SpendEvent[]
+
+  @@index([npi])
+  @@index([cmsProfileId])
+  @@map("hcp_master")
+}
+
+model SourceTransaction {
+  id                    String   @id @default(cuid())
+  dataSourceId          String
+  dataSource            DataSource @relation(fields: [dataSourceId], references: [id])
+  externalTransactionId String?
+  reviewSessionId       String?
+  rowNumber             Int?
+  rawPayload            Json
+  payloadHash           String
+  ingestedAt            DateTime @default(now())
+  status                String   @default("received")
+
+  spendEvents SpendEvent[]
+
+  @@unique([dataSourceId, payloadHash])
+  @@index([reviewSessionId])
+  @@map("source_transactions")
+}
+
+model SpendEvent {
+  id                    String   @id @default(cuid())
+  dataSourceId          String
+  dataSource            DataSource @relation(fields: [dataSourceId], references: [id])
+  sourceTransactionId   String
+  sourceTransaction     SourceTransaction @relation(fields: [sourceTransactionId], references: [id])
+  hcpMasterId           String?
+  hcpMaster             HcpMaster? @relation(fields: [hcpMasterId], references: [id])
+  dedupKey              String
+  dedupClusterId        String?
+  isPrimaryLine         Boolean  @default(true)
+  amountUsd             Float
+  paymentCurrency       String   @default("USD")
+  exchangeRate          Float    @default(1)
+  paymentDate           String?
+  programYear           String?
+  natureOfPayment       String?
+  formOfPayment         String?
+  cmsCategory           String   @default("general")
+  sourceSystem          String
+  normalizationVersion  String   @default("1.0")
+  rulesEngineVersion    String?
+  ruleInputSnapshot     Json?
+  status                String   @default("normalized")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  cmsRecord     CMSRecord?
+  generalLine   CmsGeneralPaymentLine?
+  researchLine  CmsResearchPaymentLine?
+  ownershipLine CmsOwnershipPaymentLine?
+
+  @@index([dedupKey])
+  @@index([dedupClusterId])
+  @@index([programYear])
+  @@map("spend_events")
+}
+
+model CmsSubmissionBatch {
+  id              String   @id @default(cuid())
+  batchKey        String   @unique
+  programYear     String
+  fileType        String   // general | research | ownership | mixed
+  status          String   @default("draft")
+  recordCount     Int      @default(0)
+  attestedAt      DateTime?
+  attestedBy      String?
+  exportHash      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  generalLines   CmsGeneralPaymentLine[]
+  researchLines  CmsResearchPaymentLine[]
+  ownershipLines CmsOwnershipPaymentLine[]
+
+  @@map("cms_submission_batches")
+}
+
+model CmsGeneralPaymentLine {
+  id                 String   @id @default(cuid())
+  spendEventId       String   @unique
+  spendEvent         SpendEvent @relation(fields: [spendEventId], references: [id])
+  submissionBatchId  String?
+  submissionBatch    CmsSubmissionBatch? @relation(fields: [submissionBatchId], references: [id])
+  pufFields          Json
+  recordId           String
+  programYear        String
+  coveredRecipientNpi String?
+  totalAmount        Float
+  dateOfPayment      String?
+  natureOfPayment    String?
+  disputeStatus      String?
+  changeType         String   @default("N")
+  isReportable       Boolean  @default(false)
+  rulesEngineVersion String?
+  ruleInputSnapshot  Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([programYear])
+  @@index([isReportable])
+  @@map("cms_general_payment_lines")
+}
+
+model CmsResearchPaymentLine {
+  id                 String   @id @default(cuid())
+  spendEventId       String   @unique
+  spendEvent         SpendEvent @relation(fields: [spendEventId], references: [id])
+  submissionBatchId  String?
+  submissionBatch    CmsSubmissionBatch? @relation(fields: [submissionBatchId], references: [id])
+  pufFields          Json
+  recordId           String
+  programYear        String
+  totalAmount        Float
+  nameOfStudy        String?
+  clinicalTrialsId   String?
+  preclinicalIndicator String?
+  isReportable       Boolean  @default(false)
+  rulesEngineVersion String?
+  ruleInputSnapshot  Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([programYear])
+  @@map("cms_research_payment_lines")
+}
+
+model CmsOwnershipPaymentLine {
+  id                 String   @id @default(cuid())
+  spendEventId       String   @unique
+  spendEvent         SpendEvent @relation(fields: [spendEventId], references: [id])
+  submissionBatchId  String?
+  submissionBatch    CmsSubmissionBatch? @relation(fields: [submissionBatchId], references: [id])
+  pufFields          Json
+  recordId           String
+  programYear        String
+  physicianNpi       String?
+  totalAmountInvested Float?
+  valueOfInterest    Float?
+  isReportable       Boolean  @default(false)
+  rulesEngineVersion String?
+  ruleInputSnapshot  Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([programYear])
+  @@map("cms_ownership_payment_lines")
 }

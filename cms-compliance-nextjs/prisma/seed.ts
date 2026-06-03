@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { hashPassword } from '../src/lib/auth'
+import { ensureDefaultDataSources } from '../src/lib/lineage/hcp-master-service'
 
 const prisma = new PrismaClient()
 
@@ -83,7 +84,8 @@ async function main() {
     }
   }
 
-  console.log('Seed complete: users and default company rules ready')
+  await ensureDefaultDataSources()
+  console.log('Seed complete: users, company rules, and data source registry ready')
 }
 
 main()

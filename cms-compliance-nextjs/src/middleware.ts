@@ -7,6 +7,7 @@ const PUBLIC_API_PREFIXES = [
   '/api/health',
   '/api/auth',
   '/api/connectivity',
+  '/api/lineage',
   '/api/metrics',
   '/api/monitoring',
   '/api/cms/fhir',

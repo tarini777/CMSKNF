@@ -1,5 +1,15 @@
 -- Knowledge Nexus Framework™ - Database Initialization Script
 -- This script initializes the CMS Compliance Platform database
+--
+-- ARCHITECTURE DOCS (lineage, CMS PUF, source systems):
+--   database/README.md
+--   database/ARCHITECTURE.md
+--   database/LINEAGE_SCHEMA.md
+--   database/CMS_PUF_MAPPING.md
+--   database/SOURCE_SYSTEMS.md
+--
+-- Application runtime schema (SQLite/Prisma): cms-compliance-nextjs/prisma/schema.prisma
+-- CMS reference: docs/open_payments_data_dictionary_methodology-january_2025.pdf
 
 -- Create database if it doesn't exist
 CREATE DATABASE cms_compliance;

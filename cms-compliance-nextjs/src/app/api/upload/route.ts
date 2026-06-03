@@ -7,6 +7,7 @@ import { analyzeRecordWithCompanyRules } from '@/lib/company-rules-engine'
 import { createAuditLog } from '@/lib/audit-log'
 import { getPerformedBy } from '@/lib/request-user'
 import { recalculateAggregatesForSession } from '@/lib/aggregate-threshold-service'
+import { ingestSourceRow } from '@/lib/lineage/ingest-pipeline'
 import type { TransparencyAnalysis } from '@/lib/transparency-rules-engine'
 
 function csvField(recordData: Record<string, string>, ...keys: string[]): string {
@@ -211,6 +212,16 @@ export async function POST(request: NextRequest) {
             humanDecision: 'pending',
             reviewSessionId: reviewSession.id,
           },
+        })
+
+        await ingestSourceRow({
+          sourceKey: 'csv_upload',
+          rawRow: recordData,
+          reviewSessionId: reviewSession.sessionId,
+          rowNumber: i,
+          externalTransactionId: draftRecord.recordId,
+          analysis: analysis as TransparencyAnalysis,
+          cmsRecordId: record.id,
         })
 
         processedCount++

@@ -74,12 +74,19 @@ export async function runConnectivityChecks(): Promise<ConnectivityReport> {
           : 'Demo mode — set CMS_FHIR_CLIENT_ID/SECRET in .env.local',
       }
     }),
-    timedCheck('CMS Open Payments API', '/api/open-payments?action=health', async () => {
+    timedCheck('CMS Open Payments API', 'https://openpaymentsdata.cms.gov/api/1', async () => {
       const health = await openPaymentsAPIService.getHealthStatus()
+      const recordLabel =
+        health.sampleRecordCount !== undefined
+          ? `${health.sampleRecordCount.toLocaleString()} general payment records (${health.latestProgramYear})`
+          : 'Open Payments API reachable'
+
       return {
         ok: health.isHealthy,
-        mode: 'live',
-        message: health.error || 'Open Payments API reachable',
+        mode: 'live' as const,
+        message: health.isHealthy
+          ? `${health.datasetCount} datasets · ${recordLabel} · no auth required`
+          : health.error || 'Open Payments API unreachable',
       }
     }),
     timedCheck('PubMed (NCBI E-utilities)', '/api/pubmed?action=health', async () => {

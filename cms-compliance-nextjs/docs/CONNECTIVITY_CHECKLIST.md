@@ -20,7 +20,7 @@ Expected response fields:
 |---------|-----------------|----------|-----------|
 | Database | `/api/health` | `DATABASE_URL` | Always local SQLite unless Postgres configured |
 | CMS FHIR | `/api/cms/fhir?action=health` | `CMS_FHIR_CLIENT_ID`, `CMS_FHIR_CLIENT_SECRET` | Demo without credentials |
-| Open Payments | `/api/open-payments?action=health` | `OPEN_PAYMENTS_API_BASE_URL` | Public CMS API |
+| Open Payments | `/api/open-payments?action=health` | `OPEN_PAYMENTS_API_BASE_URL` | Public CMS DKAN API — [docs](https://openpaymentsdata.cms.gov/about/api) |
 | PubMed | `/api/pubmed?action=health` | `PUBMED_EUTILS_BASE_URL` | Public NCBI API |
 | ClinicalTrials.gov | `/api/clinicaltrials?action=health` | `CLINICALTRIALS_API_BASE_URL` | Public API |
 | Glossary & rules | `/api/glossary?action=rules` | None (in-app) | Always loaded |

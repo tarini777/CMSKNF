@@ -39,7 +39,8 @@ export interface ClinicalTrialResult {
 }
 
 export class ExternalAPIService {
-  private readonly CMS_API_BASE = 'https://openpaymentsdata.cms.gov/api/v1'
+  private readonly CMS_API_BASE =
+    process.env.OPEN_PAYMENTS_API_BASE_URL || 'https://openpaymentsdata.cms.gov/api/1'
   private readonly PUBMED_API_BASE = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils'
   private readonly CLINICALTRIALS_API_BASE = 'https://clinicaltrials.gov/api/v2'
 

@@ -4,13 +4,18 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Activity, CheckCircle, Globe, RefreshCw, XCircle, AlertTriangle } from 'lucide-react'
+import { Activity, CheckCircle, ExternalLink, Globe, RefreshCw, XCircle, AlertTriangle } from 'lucide-react'
+
+const OPEN_PAYMENTS_DOCS_URL = 'https://openpaymentsdata.cms.gov/about/api'
+const OPEN_PAYMENTS_API_URL = 'https://openpaymentsdata.cms.gov/api/1'
 
 interface ConnectivityCheck {
   service: string
+  endpoint?: string
   status: 'connected' | 'demo' | 'degraded' | 'disconnected'
   message?: string
   responseTimeMs?: number
+  mode?: 'live' | 'demo' | 'mock'
 }
 
 interface ConnectivityResponse {
@@ -49,7 +54,7 @@ export default function ConnectivityDashboard() {
       ])
       const connectivity = await connectivityRes.json()
       const countriesData = await countriesRes.json()
-      setData(connectivity)
+      setData(connectivity.data ?? connectivity)
       if (countriesData.success && Array.isArray(countriesData.data)) {
         setCountries(countriesData.data.slice(0, 12))
       }
@@ -93,8 +98,11 @@ export default function ConnectivityDashboard() {
                 {data.checks?.map((check) => (
                   <div key={check.service} className="flex items-start gap-3 p-4 border rounded-lg">
                     {statusIcon(check.status)}
-                    <div>
+                    <div className="min-w-0">
                       <p className="font-medium">{check.service}</p>
+                      {check.endpoint && (
+                        <p className="text-xs text-muted-foreground break-all">{check.endpoint}</p>
+                      )}
                       <p className="text-sm text-muted-foreground">{check.message}</p>
                       {check.responseTimeMs !== undefined && (
                         <p className="text-xs text-muted-foreground mt-1">{check.responseTimeMs}ms</p>
@@ -105,6 +113,24 @@ export default function ConnectivityDashboard() {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              <div className="mt-6 p-4 border rounded-lg bg-muted/30">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="font-medium">CMS Open Payments (DKAN API)</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Live public transparency data from CMS — general, research, and ownership payment datasets.
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2 break-all">{OPEN_PAYMENTS_API_URL}</p>
+                  </div>
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={OPEN_PAYMENTS_DOCS_URL} target="_blank" rel="noopener noreferrer">
+                      API docs
+                      <ExternalLink className="w-3 h-3 ml-2" />
+                    </a>
+                  </Button>
+                </div>
               </div>
             </>
           ) : null}

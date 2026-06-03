@@ -120,50 +120,224 @@ export interface OpenPaymentsTrend {
 }
 
 export class OpenPaymentsAPIService {
-  private readonly BASE_URL = 'https://openpaymentsdata.cms.gov/api/1'
-  private readonly API_TIMEOUT = 30000
+  readonly BASE_URL =
+    process.env.OPEN_PAYMENTS_API_BASE_URL || 'https://openpaymentsdata.cms.gov/api/1'
+  readonly DOCS_URL = 'https://openpaymentsdata.cms.gov/about/api'
+  private readonly API_TIMEOUT = parseInt(process.env.OPEN_PAYMENTS_API_TIMEOUT || '60000', 10)
+  private readonly FILTERED_QUERY_TIMEOUT = parseInt(process.env.OPEN_PAYMENTS_FILTER_TIMEOUT || '120000', 10)
+  private readonly DEFAULT_LIMIT = parseInt(process.env.OPEN_PAYMENTS_DEFAULT_LIMIT || '50', 10)
+  private readonly MAX_LIMIT = Math.min(parseInt(process.env.OPEN_PAYMENTS_MAX_RESULTS || '500', 10), 500)
+  private datasetCache: { expiresAt: number; datasets: Array<{ identifier: string; title: string }> } | null = null
 
-  /**
-   * Get health status of the Open Payments API
-   */
+  private async fetchJson<T>(url: string, timeoutMs = this.API_TIMEOUT): Promise<T> {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(timeoutMs),
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    }
+
+    return response.json()
+  }
+
+  private normalizeDatasetList(payload: unknown): Array<{
+    identifier: string
+    title: string
+    description?: string
+    modified?: string
+  }> {
+    if (Array.isArray(payload)) return payload
+    if (payload && typeof payload === 'object' && Array.isArray((payload as { data?: unknown[] }).data)) {
+      return (payload as { data: Array<{ identifier: string; title: string }> }).data
+    }
+    return []
+  }
+
+  private isOpenPaymentsDataset(title?: string): boolean {
+    const normalized = (title || '').toLowerCase()
+    return (
+      normalized.includes('general payment') ||
+      normalized.includes('research payment') ||
+      normalized.includes('ownership payment')
+    )
+  }
+
+  private findDataset(
+    datasets: Array<{ identifier: string; title: string }>,
+    category: 'general' | 'research' | 'ownership',
+    programYear?: string
+  ) {
+    const matcher =
+      category === 'general'
+        ? /general payment/i
+        : category === 'research'
+          ? /research payment/i
+          : /ownership payment/i
+
+    const matches = datasets.filter((d) => matcher.test(d.title || ''))
+    if (programYear) {
+      return matches.find((d) => d.title?.includes(programYear))
+    }
+    return matches.sort((a, b) => (b.title || '').localeCompare(a.title || ''))[0]
+  }
+
+  private buildQueryParams(
+    params: { limit?: number; offset?: number },
+    conditions: Array<{ property: string; value: string; operator: string }> = []
+  ): URLSearchParams {
+    const query = new URLSearchParams()
+    query.set('limit', String(Math.min(params.limit ?? this.DEFAULT_LIMIT, this.MAX_LIMIT)))
+    query.set('offset', String(params.offset ?? 0))
+    query.set('count', 'true')
+    query.set('results', 'true')
+    query.set('format', 'json')
+    conditions.forEach((condition, index) => {
+      query.set(`conditions[${index}][property]`, condition.property)
+      query.set(`conditions[${index}][value]`, condition.value)
+      query.set(`conditions[${index}][operator]`, condition.operator)
+    })
+    return query
+  }
+
+  private buildSearchConditions(params: OpenPaymentsSearchParams) {
+    const conditions: Array<{ property: string; value: string; operator: string }> = []
+
+    if (params.applicableManufacturerName) {
+      conditions.push({
+        property: 'applicable_manufacturer_or_applicable_gpo_making_payment_name',
+        value: params.applicableManufacturerName,
+        operator: 'contains',
+      })
+    }
+    if (params.physicianName) {
+      const parts = params.physicianName.trim().split(/\s+/)
+      const lastName = parts.length > 1 ? parts[parts.length - 1] : params.physicianName
+      conditions.push({
+        property: 'covered_recipient_last_name',
+        value: lastName,
+        operator: 'contains',
+      })
+    }
+    if (params.teachingHospitalName) {
+      conditions.push({
+        property: 'teaching_hospital_name',
+        value: params.teachingHospitalName,
+        operator: 'contains',
+      })
+    }
+    if (params.state) {
+      conditions.push({ property: 'recipient_state', value: params.state, operator: '=' })
+    }
+    if (params.natureOfPayment) {
+      conditions.push({
+        property: 'nature_of_payment_or_transfer_of_value',
+        value: params.natureOfPayment,
+        operator: 'contains',
+      })
+    }
+    if (params.formOfPayment) {
+      conditions.push({
+        property: 'form_of_payment_or_transfer_of_value',
+        value: params.formOfPayment,
+        operator: 'contains',
+      })
+    }
+    if (params.specialty) {
+      conditions.push({
+        property: 'covered_recipient_specialty_1',
+        value: params.specialty,
+        operator: 'contains',
+      })
+    }
+    if (params.minAmount !== undefined) {
+      conditions.push({
+        property: 'total_amount_of_payment_usdollars',
+        value: String(params.minAmount),
+        operator: '>=',
+      })
+    }
+    if (params.maxAmount !== undefined) {
+      conditions.push({
+        property: 'total_amount_of_payment_usdollars',
+        value: String(params.maxAmount),
+        operator: '<=',
+      })
+    }
+
+    return conditions
+  }
+
+  private async getOpenPaymentsDatasets() {
+    const now = Date.now()
+    if (this.datasetCache && this.datasetCache.expiresAt > now) {
+      return this.datasetCache.datasets
+    }
+
+    const datasetsPayload = await this.fetchJson<unknown>(
+      `${this.BASE_URL}/metastore/schemas/dataset/items`
+    )
+    const datasets = this.normalizeDatasetList(datasetsPayload).filter((item) =>
+      this.isOpenPaymentsDataset(item.title)
+    )
+
+    this.datasetCache = {
+      datasets,
+      expiresAt: now + 5 * 60 * 1000,
+    }
+
+    return datasets
+  }
+
   async getHealthStatus(): Promise<{
     isHealthy: boolean
     responseTime: number
     lastCheck: string
+    baseUrl: string
+    docsUrl: string
+    datasetCount?: number
+    latestProgramYear?: string
+    latestGeneralDatasetId?: string
+    sampleRecordCount?: number
     error?: string
   }> {
     const startTime = Date.now()
     try {
-      const response = await fetch(`${this.BASE_URL}/metastore/schemas`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json'
-        },
-        signal: AbortSignal.timeout(this.API_TIMEOUT)
-      })
+      await this.fetchJson(`${this.BASE_URL}/metastore/schemas`)
 
-      const responseTime = Date.now() - startTime
+      const datasets = await this.getOpenPaymentsDatasets()
+      const latestGeneral = this.findDataset(datasets, 'general')
+      let sampleRecordCount: number | undefined
 
-      if (!response.ok) {
-        return {
-          isHealthy: false,
-          responseTime,
-          lastCheck: new Date().toISOString(),
-          error: `HTTP ${response.status}: ${response.statusText}`
-        }
+      if (latestGeneral) {
+        const query = this.buildQueryParams({ limit: 1, offset: 0 })
+        const probe = await this.fetchJson<{ count?: number }>(
+          `${this.BASE_URL}/datastore/query/${latestGeneral.identifier}/0?${query}`
+        )
+        sampleRecordCount = probe.count
       }
 
       return {
-        isHealthy: true,
-        responseTime,
-        lastCheck: new Date().toISOString()
+        isHealthy: datasets.length > 0,
+        responseTime: Date.now() - startTime,
+        lastCheck: new Date().toISOString(),
+        baseUrl: this.BASE_URL,
+        docsUrl: this.DOCS_URL,
+        datasetCount: datasets.length,
+        latestProgramYear: latestGeneral ? this.extractProgramYear(latestGeneral.title) : undefined,
+        latestGeneralDatasetId: latestGeneral?.identifier,
+        sampleRecordCount,
       }
     } catch (error) {
       return {
         isHealthy: false,
         responseTime: Date.now() - startTime,
         lastCheck: new Date().toISOString(),
-        error: error instanceof Error ? error.message : 'Unknown error'
+        baseUrl: this.BASE_URL,
+        docsUrl: this.DOCS_URL,
+        error: error instanceof Error ? error.message : 'Unknown error',
       }
     }
   }
@@ -178,35 +352,25 @@ export class OpenPaymentsAPIService {
       description: string
       modified: string
       programYear?: string
+      category?: 'general' | 'research' | 'ownership'
     }>
   }> {
     try {
-      const response = await fetch(`${this.BASE_URL}/metastore/schemas/dataset/items`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json'
-        },
-        signal: AbortSignal.timeout(this.API_TIMEOUT)
-      })
+      const data = await this.fetchJson<unknown>(`${this.BASE_URL}/metastore/schemas/dataset/items`)
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch datasets: ${response.status} ${response.statusText}`)
-      }
-
-      const data = await response.json()
-      
-      // Filter for Open Payments datasets
-      const openPaymentsDatasets = data
-        .filter((item: any) => 
-          item.title?.toLowerCase().includes('open payments') ||
-          item.identifier?.toLowerCase().includes('open-payments')
-        )
-        .map((item: any) => ({
+      const openPaymentsDatasets = this.normalizeDatasetList(data)
+        .filter((item) => this.isOpenPaymentsDataset(item.title))
+        .map((item) => ({
           identifier: item.identifier,
           title: item.title,
-          description: item.description,
-          modified: item.modified,
-          programYear: this.extractProgramYear(item.title)
+          description: item.description || '',
+          modified: item.modified || '',
+          programYear: this.extractProgramYear(item.title),
+          category: /general payment/i.test(item.title)
+            ? ('general' as const)
+            : /research payment/i.test(item.title)
+              ? ('research' as const)
+              : ('ownership' as const),
         }))
 
       return { datasets: openPaymentsDatasets }
@@ -223,75 +387,42 @@ export class OpenPaymentsAPIService {
     payments: OpenPaymentsRecord[]
     totalCount: number
     aggregations: OpenPaymentsAggregation
+    source: 'live' | 'mock'
+    datasetId?: string
   }> {
     try {
-      // First, get available datasets to find the correct dataset ID
-      const datasetsResponse = await fetch(`${this.BASE_URL}/metastore/schemas/dataset/items`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json'
-        },
-        signal: AbortSignal.timeout(this.API_TIMEOUT)
-      })
-
-      if (!datasetsResponse.ok) {
-        throw new Error(`Failed to get datasets: ${datasetsResponse.status} ${datasetsResponse.statusText}`)
-      }
-
-      const datasetsData = await datasetsResponse.json()
-      const datasets = datasetsData.data || []
-      
-      // Find the most recent general payments dataset
-      const generalPaymentsDataset = datasets.find((dataset: any) => 
-        dataset.title && dataset.title.toLowerCase().includes('general payments')
-      )
+      const datasets = await this.getOpenPaymentsDatasets()
+      const generalPaymentsDataset = this.findDataset(datasets, 'general', params.programYear)
 
       if (!generalPaymentsDataset) {
-        console.log('🔧 No general payments dataset found, using mock data')
-        return this.getMockPaymentData(params)
+        console.log('No general payments dataset found, using mock data')
+        return { ...this.getMockPaymentData(params), source: 'mock' }
       }
 
-      // Build query parameters for the specific dataset
-      const queryParams = new URLSearchParams()
-      
-      // Use the correct parameter names for CMS Open Payments API
-      if (params.programYear) queryParams.append('program_year', params.programYear)
-      if (params.physicianName) queryParams.append('physician_name', params.physicianName)
-      if (params.teachingHospitalName) queryParams.append('teaching_hospital_name', params.teachingHospitalName)
-      if (params.applicableManufacturerName) queryParams.append('applicable_manufacturer_name', params.applicableManufacturerName)
-      if (params.natureOfPayment) queryParams.append('nature_of_payment', params.natureOfPayment)
-      if (params.formOfPayment) queryParams.append('form_of_payment', params.formOfPayment)
-      if (params.minAmount) queryParams.append('min_amount', params.minAmount.toString())
-      if (params.maxAmount) queryParams.append('max_amount', params.maxAmount.toString())
-      if (params.state) queryParams.append('state', params.state)
-      if (params.specialty) queryParams.append('specialty', params.specialty)
-      if (params.limit) queryParams.append('limit', params.limit.toString())
-      if (params.offset) queryParams.append('offset', params.offset.toString())
+      const conditions = this.buildSearchConditions(params)
+      const query = this.buildQueryParams(
+        { limit: params.limit, offset: params.offset },
+        conditions
+      )
+      const timeoutMs = conditions.length > 0 ? this.FILTERED_QUERY_TIMEOUT : this.API_TIMEOUT
 
-      // Use the correct dataset ID in the query
-      const response = await fetch(`${this.BASE_URL}/datastore/query/${generalPaymentsDataset.identifier}?${queryParams}`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json'
-        },
-        signal: AbortSignal.timeout(this.API_TIMEOUT)
-      })
+      const data = await this.fetchJson<{ results?: unknown[]; count?: number }>(
+        `${this.BASE_URL}/datastore/query/${generalPaymentsDataset.identifier}/0?${query}`,
+        timeoutMs
+      )
 
-      if (!response.ok) {
-        throw new Error(`Open Payments search failed: ${response.status} ${response.statusText}`)
-      }
+      const payments = this.parseOpenPaymentsRecords(data.results || [])
 
-      const data = await response.json()
-      
       return {
-        payments: this.parseOpenPaymentsRecords(data.results || []),
-        totalCount: data.count || 0,
-        aggregations: this.calculateAggregations(data.results || [])
+        payments,
+        totalCount: data.count ?? payments.length,
+        aggregations: this.calculateAggregations(payments),
+        source: 'live',
+        datasetId: generalPaymentsDataset.identifier,
       }
     } catch (error) {
       console.error('Error searching Open Payments:', error)
-      // Return mock data for demo purposes if API fails
-      return this.getMockPaymentData(params)
+      return { ...this.getMockPaymentData(params), source: 'mock' }
     }
   }
 
@@ -408,27 +539,14 @@ export class OpenPaymentsAPIService {
     totalCount: number
   }> {
     try {
-      const queryParams = new URLSearchParams()
-      queryParams.append('limit', limit.toString())
-      queryParams.append('offset', offset.toString())
+      const query = this.buildQueryParams({ limit, offset })
+      const data = await this.fetchJson<{ results?: unknown[]; count?: number }>(
+        `${this.BASE_URL}/datastore/query/${datasetId}/0?${query}`
+      )
 
-      const response = await fetch(`${this.BASE_URL}/datastore/query/${datasetId}?${queryParams}`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json'
-        },
-        signal: AbortSignal.timeout(this.API_TIMEOUT)
-      })
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch dataset ${datasetId}: ${response.status} ${response.statusText}`)
-      }
-
-      const data = await response.json()
-      
       return {
-        payments: this.parseOpenPaymentsRecords(data.records || []),
-        totalCount: data.totalCount || 0
+        payments: this.parseOpenPaymentsRecords(data.results || []),
+        totalCount: data.count ?? (data.results || []).length,
       }
     } catch (error) {
       console.error(`Error fetching dataset ${datasetId}:`, error)
@@ -1102,11 +1220,26 @@ export class OpenPaymentsAPIService {
       teachingHospitalCCN: record.teaching_hospital_ccn || record.Teaching_Hospital_CCN,
       teachingHospitalName: record.teaching_hospital_name || record.Teaching_Hospital_Name,
       teachingHospitalState: record.teaching_hospital_state || record.Teaching_Hospital_State,
-      physicianProfileId: record.physician_profile_id || record.Physician_Profile_ID,
-      physicianFirstName: record.physician_first_name || record.Physician_First_Name,
-      physicianMiddleName: record.physician_middle_name || record.Physician_Middle_Name,
-      physicianLastName: record.physician_last_name || record.Physician_Last_Name,
-      physicianNameSuffix: record.physician_name_suffix || record.Physician_Name_Suffix,
+      physicianProfileId:
+        record.covered_recipient_profile_id ||
+        record.physician_profile_id ||
+        record.Physician_Profile_ID,
+      physicianFirstName:
+        record.covered_recipient_first_name ||
+        record.physician_first_name ||
+        record.Physician_First_Name,
+      physicianMiddleName:
+        record.covered_recipient_middle_name ||
+        record.physician_middle_name ||
+        record.Physician_Middle_Name,
+      physicianLastName:
+        record.covered_recipient_last_name ||
+        record.physician_last_name ||
+        record.Physician_Last_Name,
+      physicianNameSuffix:
+        record.covered_recipient_name_suffix ||
+        record.physician_name_suffix ||
+        record.Physician_Name_Suffix,
       recipientPrimaryBusinessStreetAddressLine1: record.recipient_primary_business_street_address_line1 || record.Recipient_Primary_Business_Street_Address_Line1,
       recipientPrimaryBusinessStreetAddressLine2: record.recipient_primary_business_street_address_line2 || record.Recipient_Primary_Business_Street_Address_Line2,
       recipientCity: record.recipient_city || record.Recipient_City,
@@ -1115,8 +1248,14 @@ export class OpenPaymentsAPIService {
       recipientCountry: record.recipient_country || record.Recipient_Country,
       recipientProvince: record.recipient_province || record.Recipient_Province,
       recipientPostalCode: record.recipient_postal_code || record.Recipient_Postal_Code,
-      physicianPrimaryType: record.physician_primary_type || record.Physician_Primary_Type,
-      physicianSpecialty: record.physician_specialty || record.Physician_Specialty,
+      physicianPrimaryType:
+        record.covered_recipient_primary_type_1 ||
+        record.physician_primary_type ||
+        record.Physician_Primary_Type,
+      physicianSpecialty:
+        record.covered_recipient_specialty_1 ||
+        record.physician_specialty ||
+        record.Physician_Specialty,
       physicianLicenseStateCode1: record.physician_license_state_code1 || record.Physician_License_State_Code1,
       physicianLicenseStateCode2: record.physician_license_state_code2 || record.Physician_License_State_Code2,
       physicianLicenseStateCode3: record.physician_license_state_code3 || record.Physician_License_State_Code3,

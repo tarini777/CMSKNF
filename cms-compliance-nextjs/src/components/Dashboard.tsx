@@ -20,7 +20,8 @@ import {
   Clock,
   Building2,
   Scale,
-  BookOpen
+  BookOpen,
+  GitBranch
 } from 'lucide-react'
 import { DashboardMetrics, FileUploadResponse } from '@/types/cms'
 import FileUpload from './FileUpload'
@@ -33,6 +34,7 @@ import GlossaryDashboard from './GlossaryDashboard'
 import DataAnalysisDashboard from './DataAnalysisDashboard'
 import AuditLogDashboard from './AuditLogDashboard'
 import ConnectivityDashboard from './ConnectivityDashboard'
+import LineageDashboard from './LineageDashboard'
 import TransparencyDashboard from './TransparencyDashboard'
 import AuthHeader from './AuthHeader'
 
@@ -156,6 +158,10 @@ export default function Dashboard() {
             <TabsTrigger value="audit" className="flex items-center gap-2">
               <Shield className="w-4 h-4" />
               Audit Trail
+            </TabsTrigger>
+            <TabsTrigger value="lineage" className="flex items-center gap-2">
+              <GitBranch className="w-4 h-4" />
+              Lineage
             </TabsTrigger>
             <TabsTrigger value="connectivity" className="flex items-center gap-2">
               <Database className="w-4 h-4" />
@@ -378,6 +384,10 @@ export default function Dashboard() {
           {/* Audit Trail Tab */}
           <TabsContent value="audit" className="space-y-6">
             <AuditLogDashboard />
+          </TabsContent>
+
+          <TabsContent value="lineage" className="space-y-6">
+            <LineageDashboard />
           </TabsContent>
 
           {/* Connectivity Tab (Phase 5) */}

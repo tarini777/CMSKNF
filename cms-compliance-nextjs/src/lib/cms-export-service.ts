@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { generateFullGeneralPufCsv, getPufExportStats } from '@/lib/lineage/puf-export-service'
 
 /** CMS Open Payments general payment CSV columns (subset for export). */
 const CMS_EXPORT_HEADERS = [
@@ -87,7 +88,16 @@ async function fetchReportableRecords(programYear?: string) {
 }
 
 export async function generateCmsOpenPaymentsCsv(programYear?: string): Promise<string> {
-  const records = await fetchReportableRecords(programYear)
+  const year = programYear || String(new Date().getFullYear())
+  const pufLineCount = await prisma.cmsGeneralPaymentLine.count({
+    where: { programYear: year, isReportable: true },
+  })
+
+  if (pufLineCount > 0) {
+    return generateFullGeneralPufCsv(year)
+  }
+
+  const records = await fetchReportableRecords(year)
   const header = CMS_EXPORT_HEADERS.join(',')
   const rows = records.map(recordToCsvRow)
   return [header, ...rows].join('\n')
@@ -95,6 +105,7 @@ export async function generateCmsOpenPaymentsCsv(programYear?: string): Promise<
 
 export async function getCmsExportStats(programYear?: string) {
   const year = programYear || String(new Date().getFullYear())
+  const pufStats = await getPufExportStats(year)
   const [total, reportable, disputed, unresolved] = await Promise.all([
     prisma.cMSRecord.count({
       where: { OR: [{ programYear: year }, { dateOfPayment: { startsWith: year } }] },
@@ -118,7 +129,14 @@ export async function getCmsExportStats(programYear?: string) {
       },
     }),
   ])
-  return { totalRecords: total, reportableRecords: reportable, disputedRecords: disputed, unresolvedDisputes: unresolved, programYear: year }
+  return {
+    totalRecords: total,
+    reportableRecords: reportable,
+    disputedRecords: disputed,
+    unresolvedDisputes: unresolved,
+    programYear: year,
+    pufLineage: pufStats,
+  }
 }
 
 export { CMS_EXPORT_HEADERS }
