@@ -22,8 +22,10 @@ import {
   Trash2,
   FileText,
   Scale,
-  Globe
+  Globe,
+  Download
 } from 'lucide-react'
+import { getActiveProgramYear } from '@/lib/submission-calendar'
 
 interface GlossaryTerm {
   id: string
@@ -578,6 +580,20 @@ export default function GlossaryDashboard() {
                       <Badge key={i} variant="secondary" className="text-xs">{note}</Badge>
                     ))}
                   </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-2"
+                    onClick={() =>
+                      window.open(
+                        `/api/transparency/export/international?programYear=${getActiveProgramYear()}&jurisdiction=${country.countryCode.toLowerCase()}`,
+                        '_blank'
+                      )
+                    }
+                  >
+                    <Download className="w-3.5 h-3.5 mr-1.5" />
+                    Export {country.countryCode} CSV
+                  </Button>
                 </CardContent>
               </Card>
             ))}

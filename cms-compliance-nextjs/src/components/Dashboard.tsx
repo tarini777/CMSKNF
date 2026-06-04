@@ -16,6 +16,7 @@ import AuditLogDashboard from './AuditLogDashboard'
 import ConnectivityDashboard from './ConnectivityDashboard'
 import LineageDashboard from './LineageDashboard'
 import ConnectorsDashboard from './ConnectorsDashboard'
+import NppesConnectorPanel from './NppesConnectorPanel'
 import DedupDashboard from './DedupDashboard'
 import TransparencyDashboard from './TransparencyDashboard'
 import AppHeader from './app/AppHeader'
@@ -122,6 +123,7 @@ function DashboardInner() {
             <div className="space-y-4">
               <LineageDashboard />
               <DedupDashboard />
+              <NppesConnectorPanel />
               <ConnectorsDashboard />
             </div>
           )}

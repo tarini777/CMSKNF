@@ -1,10 +1,14 @@
 import { isDemoMode } from '@/lib/app-config'
+import { nppesLookupByNumber, parseNppesRecord } from '@/lib/nppes-api-client'
 
 export interface NppesProvider {
   npi: string
+  enumerationType?: 'NPI-1' | 'NPI-2'
+  recipientType?: 'individual' | 'organization'
   firstName?: string
   lastName?: string
   middleName?: string
+  organizationName?: string
   credential?: string
   specialty?: string
   primaryType?: string
@@ -26,9 +30,19 @@ export interface NppesVerificationResult {
 }
 
 function scoreNameMatch(
-  expected: { first?: string; last?: string },
-  actual: { first?: string; last?: string }
+  expected: { first?: string; last?: string; organization?: string },
+  actual: { first?: string; last?: string; organization?: string },
+  recipientType: 'individual' | 'organization' = 'individual'
 ): { match: boolean; score: number } {
+  if (recipientType === 'organization') {
+    const eo = (expected.organization || '').toLowerCase().trim()
+    const ao = (actual.organization || '').toLowerCase().trim()
+    if (!eo) return { match: true, score: 1 }
+    if (!ao) return { match: false, score: 0 }
+    const match = ao.includes(eo) || eo.includes(ao)
+    return { match, score: match ? 1 : 0 }
+  }
+
   const ef = (expected.first || '').toLowerCase().trim()
   const el = (expected.last || '').toLowerCase().trim()
   const af = (actual.first || '').toLowerCase().trim()
@@ -45,6 +59,8 @@ function scoreNameMatch(
 const DEMO_NPPES: Record<string, NppesProvider> = {
   '1234567890': {
     npi: '1234567890',
+    enumerationType: 'NPI-1',
+    recipientType: 'individual',
     firstName: 'Jane',
     lastName: 'Doe',
     specialty: 'Internal Medicine',
@@ -55,6 +71,8 @@ const DEMO_NPPES: Record<string, NppesProvider> = {
   },
   '9876543210': {
     npi: '9876543210',
+    enumerationType: 'NPI-1',
+    recipientType: 'individual',
     firstName: 'John',
     lastName: 'Smith',
     specialty: 'Cardiology',
@@ -65,35 +83,14 @@ const DEMO_NPPES: Record<string, NppesProvider> = {
   },
 }
 
-function parseNppesResponse(data: unknown, npi: string): NppesProvider | null {
-  const root = data as { result_count?: number; results?: Array<Record<string, unknown>> }
-  if (!root.results?.length) return null
-  const r = root.results[0]
-  const basic = (r.basic || {}) as Record<string, string>
-  const taxonomies = (r.taxonomies || []) as Array<{ desc?: string; primary?: boolean }>
-  const primaryTax = taxonomies.find((t) => t.primary) || taxonomies[0]
-  const addresses = (r.addresses || []) as Array<Record<string, string>>
-  const loc = addresses.find((a) => a.address_purpose === 'LOCATION') || addresses[0]
-
-  return {
-    npi,
-    firstName: basic.first_name,
-    lastName: basic.last_name,
-    middleName: basic.middle_name,
-    credential: basic.credential,
-    specialty: primaryTax?.desc,
-    primaryType: primaryTax?.desc,
-    addressLine1: loc?.address_1,
-    city: loc?.city,
-    state: loc?.state,
-    zip: loc?.postal_code,
-    status: basic.status,
-  }
-}
-
 export async function verifyNpi(
   npi: string,
-  expectedName?: { firstName?: string; lastName?: string; coveredRecipientName?: string }
+  expectedName?: {
+    firstName?: string
+    lastName?: string
+    coveredRecipientName?: string
+    organizationName?: string
+  }
 ): Promise<NppesVerificationResult> {
   const cleaned = npi.replace(/\D/g, '')
   if (cleaned.length !== 10) {
@@ -112,13 +109,8 @@ export async function verifyNpi(
   let source: NppesVerificationResult['source'] = 'nppes_api'
 
   try {
-    const res = await fetch(`https://npiregistry.cms.hhs.gov/api/?version=2.1&number=${cleaned}`, {
-      next: { revalidate: 86400 },
-    })
-    if (res.ok) {
-      const data = await res.json()
-      provider = parseNppesResponse(data, cleaned)
-    }
+    const record = await nppesLookupByNumber(cleaned)
+    if (record) provider = parseNppesRecord(record)
   } catch {
     /* fall through to demo */
   }
@@ -142,17 +134,26 @@ export async function verifyNpi(
 
   let first = expectedName?.firstName
   let last = expectedName?.lastName
-  if (!first && !last && expectedName?.coveredRecipientName) {
+  let organization = expectedName?.organizationName
+  if (!first && !last && !organization && expectedName?.coveredRecipientName) {
     const parts = expectedName.coveredRecipientName.replace(/^Dr\.?\s*/i, '').trim().split(/\s+/)
     if (parts.length >= 2) {
       first = parts[0]
       last = parts[parts.length - 1]
+    } else if (parts.length === 1) {
+      organization = parts[0]
     }
   }
 
+  const recipientType = provider.recipientType || 'individual'
   const { match, score } = scoreNameMatch(
-    { first, last },
-    { first: provider.firstName, last: provider.lastName }
+    { first, last, organization },
+    {
+      first: provider.firstName,
+      last: provider.lastName,
+      organization: provider.organizationName,
+    },
+    recipientType
   )
 
   return {
@@ -162,8 +163,10 @@ export async function verifyNpi(
     nameMatch: match,
     matchScore: score,
     message: match
-      ? 'NPI verified — name matches NPPES record'
-      : 'NPI found but name does not match NPPES — review identity',
+      ? 'NPI verified — identity matches NPPES record'
+      : recipientType === 'organization'
+        ? 'NPI found but organization name does not match NPPES — review identity'
+        : 'NPI found but name does not match NPPES — review identity',
     source,
   }
 }

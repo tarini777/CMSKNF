@@ -162,3 +162,8 @@ grafana-data/
 # Large local CMS Open Payments extracts
 OP_DTL_*.csv
 OP_REMOVED_*.csv
+OP_CVRD_*.csv
+database/PGYR*/
+database/PHPRFL*/
+database/**/*.csv
+!database/manifest.json

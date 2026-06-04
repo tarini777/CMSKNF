@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Download, RefreshCw, CheckSquare, Package } from 'lucide-react'
 import DisputeDashboard from './DisputeDashboard'
 import ConsentDashboard from './ConsentDashboard'
+import InternationalExportPanel from './InternationalExportPanel'
 
 interface Milestone {
   id: string
@@ -216,30 +217,9 @@ export default function TransparencyDashboard() {
             </div>
           )}
           <div className="flex flex-wrap gap-2 pt-2 border-t">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() =>
-                window.open(
-                  `/api/transparency/export/international?programYear=${programYear}&jurisdiction=fr`,
-                  '_blank'
-                )
-              }
-            >
-              France (Transparence)
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() =>
-                window.open(
-                  `/api/transparency/export/international?programYear=${programYear}&jurisdiction=uk`,
-                  '_blank'
-                )
-              }
-            >
-              UK (Disclosure)
-            </Button>
+            <InternationalExportPanel />
+          </div>
+          <div className="flex flex-wrap gap-2 pt-2">
             <Button
               size="sm"
               variant="outline"

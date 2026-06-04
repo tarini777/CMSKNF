@@ -39,6 +39,45 @@ curl -s http://localhost:3000/api/lineage?action=stats | jq .
 curl -s "http://localhost:3000/api/lineage?action=trace&spendEventId=<id>" | jq .
 ```
 
+## CMS Open Payments PUF bulk load (local files)
+
+> **Recommended:** Store bulk CSVs in Google Drive and keep metadata in [`manifest.json`](./manifest.json). See [`GDRIVE_SETUP.md`](./GDRIVE_SETUP.md).
+
+Official CMS publication files under `database/`:
+
+| Folder | Contents | Rows (approx.) |
+|--------|----------|----------------|
+| `PGYR2023_P01232026_01102026/` | General, research, ownership, removed/deleted (PY2023) | 15.8M |
+| `PGYR2024_P01232026_01102026 (1)/` | General, research, ownership, removed/deleted (PY2024) | 16.2M |
+| `PHPRFL_P01232026_01102026/` | Covered recipient profile supplement | 1.6M |
+
+**Total:** ~33.5M payment/profile rows (~18 GB). CSV folders are **gitignored**; only [`manifest.json`](./manifest.json) is committed.
+
+Load into Postgres (streaming import — profiles → payments → removed markers):
+
+```bash
+cd cms-compliance-nextjs
+npm run db:import-puf -- --resume --batch-size 300
+```
+
+With Google Drive (runtime streaming, no local CSVs):
+
+```bash
+CMS_DATASET_STORAGE=gdrive npm run db:import-puf -- --resume --batch-size 300
+```
+
+Link Drive file IDs after upload:
+
+```bash
+npm run datasets:sync-gdrive
+```
+
+Inspect metadata:
+
+```bash
+curl -s http://localhost:3000/api/datasets?action=manifest | jq .
+```
+
 Export full 91-column general PUF CSV:
 
 ```bash

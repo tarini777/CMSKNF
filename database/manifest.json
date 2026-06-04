@@ -1,0 +1,142 @@
+{
+  "version": "1.0.0",
+  "updatedAt": "2026-06-03",
+  "publication": {
+    "id": "P01232026_01102026",
+    "label": "CMS Open Payments — January 2026 publication refresh"
+  },
+  "storage": {
+    "backend": "local",
+    "mode": "desktop_sync",
+    "desktopSyncRoot": "/Users/tarini/Google Drive/My Drive/CMSKNF/cms-open-payments",
+    "gdriveFolderId": "",
+    "localFallbackEnabled": true,
+    "localRoot": "database"
+  },
+  "files": {
+    "profiles": {
+      "key": "profiles",
+      "category": "mdm",
+      "programYear": null,
+      "fileName": "OP_CVRD_RCPNT_PRFL_SPLMTL_P01232026_01102026.csv",
+      "relativePath": "PHPRFL_P01232026_01102026/OP_CVRD_RCPNT_PRFL_SPLMTL_P01232026_01102026.csv",
+      "bytes": 383886605,
+      "approxRows": 1618298,
+      "contentType": "text/csv",
+      "gdriveFileId": null
+    },
+    "py2023_general": {
+      "key": "py2023_general",
+      "category": "payments",
+      "programYear": "2023",
+      "paymentType": "general",
+      "fileName": "OP_DTL_GNRL_PGYR2023_P01232026_01102026.csv",
+      "relativePath": "PGYR2023_P01232026_01102026/OP_DTL_GNRL_PGYR2023_P01232026_01102026.csv",
+      "bytes": 8213429301,
+      "approxRows": 14701069,
+      "contentType": "text/csv",
+      "gdriveFileId": null
+    },
+    "py2023_research": {
+      "key": "py2023_research",
+      "category": "payments",
+      "programYear": "2023",
+      "paymentType": "research",
+      "fileName": "OP_DTL_RSRCH_PGYR2023_P01232026_01102026.csv",
+      "relativePath": "PGYR2023_P01232026_01102026/OP_DTL_RSRCH_PGYR2023_P01232026_01102026.csv",
+      "bytes": 1034644732,
+      "approxRows": 1080157,
+      "contentType": "text/csv",
+      "gdriveFileId": null
+    },
+    "py2023_ownership": {
+      "key": "py2023_ownership",
+      "category": "payments",
+      "programYear": "2023",
+      "paymentType": "ownership",
+      "fileName": "OP_DTL_OWNRSHP_PGYR2023_P01232026_01102026.csv",
+      "relativePath": "PGYR2023_P01232026_01102026/OP_DTL_OWNRSHP_PGYR2023_P01232026_01102026.csv",
+      "bytes": 1950074,
+      "approxRows": 4448,
+      "contentType": "text/csv",
+      "gdriveFileId": null
+    },
+    "py2023_removed": {
+      "key": "py2023_removed",
+      "category": "payments",
+      "programYear": "2023",
+      "paymentType": "removed",
+      "fileName": "OP_REMOVED_DELETED_PGYR2023_P01232026_01102026.csv",
+      "relativePath": "PGYR2023_P01232026_01102026/OP_REMOVED_DELETED_PGYR2023_P01232026_01102026.csv",
+      "bytes": 157263,
+      "approxRows": 3824,
+      "contentType": "text/csv",
+      "gdriveFileId": null
+    },
+    "py2024_general": {
+      "key": "py2024_general",
+      "category": "payments",
+      "programYear": "2024",
+      "paymentType": "general",
+      "fileName": "OP_DTL_GNRL_PGYR2024_P01232026_01102026.csv",
+      "relativePath": "PGYR2024_P01232026_01102026 (1)/OP_DTL_GNRL_PGYR2024_P01232026_01102026.csv",
+      "bytes": 8907261207,
+      "approxRows": 15385047,
+      "contentType": "text/csv",
+      "gdriveFileId": null
+    },
+    "py2024_research": {
+      "key": "py2024_research",
+      "category": "payments",
+      "programYear": "2024",
+      "paymentType": "research",
+      "fileName": "OP_DTL_RSRCH_PGYR2024_P01232026_01102026.csv",
+      "relativePath": "PGYR2024_P01232026_01102026 (1)/OP_DTL_RSRCH_PGYR2024_P01232026_01102026.csv",
+      "bytes": 726777532,
+      "approxRows": 756906,
+      "contentType": "text/csv",
+      "gdriveFileId": null
+    },
+    "py2024_ownership": {
+      "key": "py2024_ownership",
+      "category": "payments",
+      "programYear": "2024",
+      "paymentType": "ownership",
+      "fileName": "OP_DTL_OWNRSHP_PGYR2024_P01232026_01102026.csv",
+      "relativePath": "PGYR2024_P01232026_01102026 (1)/OP_DTL_OWNRSHP_PGYR2024_P01232026_01102026.csv",
+      "bytes": 2112404,
+      "approxRows": 4593,
+      "contentType": "text/csv",
+      "gdriveFileId": null
+    },
+    "py2024_removed": {
+      "key": "py2024_removed",
+      "category": "payments",
+      "programYear": "2024",
+      "paymentType": "removed",
+      "fileName": "OP_REMOVED_DELETED_PGYR2024_P01232026_01102026.csv",
+      "relativePath": "PGYR2024_P01232026_01102026 (1)/OP_REMOVED_DELETED_PGYR2024_P01232026_01102026.csv",
+      "bytes": 614104,
+      "approxRows": 14939,
+      "contentType": "text/csv",
+      "gdriveFileId": null
+    }
+  },
+  "importMapping": {
+    "profiles": "profiles",
+    "programYears": {
+      "2023": {
+        "general": "py2023_general",
+        "research": "py2023_research",
+        "ownership": "py2023_ownership",
+        "removed": "py2023_removed"
+      },
+      "2024": {
+        "general": "py2024_general",
+        "research": "py2024_research",
+        "ownership": "py2024_ownership",
+        "removed": "py2024_removed"
+      }
+    }
+  }
+}

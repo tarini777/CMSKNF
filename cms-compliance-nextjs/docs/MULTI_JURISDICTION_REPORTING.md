@@ -23,6 +23,37 @@ This platform catalogs **national transparency regimes** equivalent to:
 | Southern Europe | CY, ES, GR, IT, MT, PT, RO, SI, SK, … | **EFPIA** / Farmindustria |
 | Eastern Europe & Balkans | AL, BA, BG, BY, HR, CZ, HU, MD, ME, MK, PL, RS, RU, TR, UA, … | EFPIA where EU member; IEIS Turkey; monitor others |
 
+## Filing export (Phase 5)
+
+All **78 jurisdictions** support CSV export via:
+
+```bash
+# Stats for every jurisdiction (record counts + template type)
+curl -s "http://localhost:3000/api/transparency/export/international?format=json&jurisdiction=all" | jq '.data.totalJurisdictions'
+
+# Download France (Loi Bertrand template)
+curl -s "http://localhost:3000/api/transparency/export/international?jurisdiction=fr&programYear=2025" -o FR.csv
+
+# Download Germany (EFPIA standard template)
+curl -s "http://localhost:3000/api/transparency/export/international?jurisdiction=de&programYear=2025" -o DE.csv
+
+# Download UK (Disclosure UK template)
+curl -s "http://localhost:3000/api/transparency/export/international?jurisdiction=gb&programYear=2025" -o GB.csv
+```
+
+Export templates:
+
+| Template | Jurisdictions | Notes |
+|----------|---------------|-------|
+| `fr_transparence` | France | Transparence Santé / Loi Bertrand columns |
+| `uk_disclosure` | United Kingdom (GB) | ABPI Disclosure UK columns |
+| `efpia_standard` | EFPIA-aligned EU/EEA members | Standard disclosure CSV with regime metadata |
+| `national_standard` | All other catalogued countries | National regime metadata + payment fields |
+
+**UI:** Transparency → Export tab includes the International Reporting panel with jurisdiction selector. Glossary → Global tab has per-country export buttons.
+
+**Database:** `jurisdiction_rules` is synced from this catalog on `npx prisma db seed` (78 rows, thresholds from regime metadata).
+
 ## API usage
 
 ### List all countries

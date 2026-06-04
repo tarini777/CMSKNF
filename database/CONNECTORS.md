@@ -16,19 +16,28 @@ Runtime: **PostgreSQL** (`DATABASE_URL`, default host port **5433** via root `do
 | `ctms` | Clinical trial management | clinical | `ctms-mapper-1.0` |
 | `greenphire` | Greenphire clinical payments | clinical | `greenphire-mapper-1.0` |
 
-## Reference / config sync (not spend ingest)
+## Reference / MDM connectors (not spend ingest)
+
+| `source_key` | System | Category | API version |
+|--------------|--------|----------|-------------|
+| `nppes` | CMS NPPES Read API | mdm | `2.1` |
 
 | Endpoint | Purpose |
 |----------|---------|
+| `GET /api/connectors/nppes` | NPPES connector metadata + health check |
+| `POST /api/connectors/nppes` | Verify NPI (`action=verify`), raw lookup (`lookup`), or search (`search`) |
+| `POST /api/nppes/verify` | Verify NPI against a CMS record (by NPI or `recordId`) |
 | `POST /api/connectors/fmv/sync` | Sync CLM / `fmv_engine` rates → `fmv_rates` table |
 | `GET /api/connectors/fmv/sync` | List active FMV rates |
+
+NPPES uses the CMS public Read API (`https://npiregistry.cms.hhs.gov/api/?version=2.1`) — no API key required. NPI issuance does not validate licensure or credentialing. Ingest policy: `NPPES_INGEST_POLICY=off|warn|block`.
 
 ## Pipeline
 
 ```
 Upstream JSON/XML/CSV row
   → mapConnectorPayload()     # field mapping + nature enrichment
-  → NPPES verification        # ingest-time (NPPES_INGEST_POLICY)
+  → NPPES verification        # `/api/connectors/nppes` · ingest-time (NPPES_INGEST_POLICY)
   → SourceTransaction         # rawPayload + payloadHash (dedupe)
   → transparency rules
   → SpendEvent + PUF line + CMSRecord

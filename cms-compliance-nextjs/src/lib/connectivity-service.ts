@@ -5,6 +5,8 @@ import { clinicalTrialsAPIService } from './clinicaltrials-api'
 import { prisma } from './prisma'
 import { glossaryService } from './glossary-service'
 import { internationalComplianceService } from './international-compliance-service'
+import { nppesHealthCheck } from './nppes-api-client'
+import { isDemoMode } from './app-config'
 
 export interface ConnectivityCheck {
   service: string
@@ -119,6 +121,16 @@ export async function runConnectivityChecks(): Promise<ConnectivityReport> {
         ok: true,
         mode: 'live' as const,
         message: `${rules.length} CMS geographic rules loaded`,
+      }
+    }),
+    timedCheck('CMS NPPES Read API', 'https://npiregistry.cms.hhs.gov/api/?version=2.1', async () => {
+      const health = await nppesHealthCheck()
+      return {
+        ok: health.ok,
+        mode: isDemoMode() ? ('demo' as const) : ('live' as const),
+        message: health.ok
+          ? `${health.message} · API v${health.apiVersion}`
+          : health.message,
       }
     }),
   ])

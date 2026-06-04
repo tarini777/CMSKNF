@@ -12,6 +12,7 @@ import {
   SUPPORTED_CONNECTOR_KEYS,
 } from '@/lib/lineage/connectors'
 import type { SupportedConnectorKey } from '@/lib/lineage/connectors/types'
+import { REFERENCE_CONNECTORS } from '@/lib/lineage/connectors/nppes-mdm'
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,6 +27,7 @@ export async function GET(request: NextRequest) {
           data: {
             supported: SUPPORTED_CONNECTOR_KEYS,
             connectors: listConnectorDefinitions(),
+            referenceConnectors: REFERENCE_CONNECTORS,
           },
         })
 

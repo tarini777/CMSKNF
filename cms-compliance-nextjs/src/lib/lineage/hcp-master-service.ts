@@ -24,6 +24,7 @@ export const DEFAULT_DATA_SOURCES = [
   { sourceKey: 'veeva_open_data', sourceName: 'Veeva OpenData MDM', sourceCategory: 'mdm' },
   { sourceKey: 'iqvia_onekey', sourceName: 'IQVIA OneKey', sourceCategory: 'mdm' },
   { sourceKey: 'nppes', sourceName: 'NPPES NPI Registry', sourceCategory: 'mdm' },
+  { sourceKey: 'cms_open_payments_puf', sourceName: 'CMS Open Payments PUF', sourceCategory: 'mdm' },
 ] as const
 
 export async function ensureDefaultDataSources() {

@@ -40,10 +40,15 @@ const statusIcon = (status: string) => {
   }
 }
 
+interface CountryPreview {
+  countryCode: string
+  countryName: string
+}
+
 export default function ConnectivityDashboard() {
   const [data, setData] = useState<ConnectivityResponse | null>(null)
   const [loading, setLoading] = useState(true)
-  const [countries, setCountries] = useState<string[]>([])
+  const [countries, setCountries] = useState<CountryPreview[]>([])
 
   const fetchAll = async () => {
     setLoading(true)
@@ -55,8 +60,15 @@ export default function ConnectivityDashboard() {
       const connectivity = await connectivityRes.json()
       const countriesData = await countriesRes.json()
       setData(connectivity.data ?? connectivity)
-      if (countriesData.success && Array.isArray(countriesData.data)) {
-        setCountries(countriesData.data.slice(0, 12))
+      const countryList = countriesData.data?.countries ?? countriesData.data
+      if (countriesData.success && Array.isArray(countryList)) {
+        setCountries(
+          countryList.slice(0, 12).map((c: CountryPreview | string) =>
+            typeof c === 'string'
+              ? { countryCode: c, countryName: c }
+              : { countryCode: c.countryCode, countryName: c.countryName }
+          )
+        )
       }
     } finally {
       setLoading(false)
@@ -153,14 +165,18 @@ export default function ConnectivityDashboard() {
           {countries.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {countries.map((c) => (
-                <Badge key={c} variant="secondary">
-                  {c}
+                <Badge key={c.countryCode} variant="secondary">
+                  {c.countryName}
                 </Badge>
               ))}
-              <Badge variant="outline">+ more via Glossary tab</Badge>
+              <Badge variant="outline">
+                +{(data?.rulesSummary?.internationalCountries ?? 78) - countries.length} more via Glossary tab
+              </Badge>
             </div>
+          ) : loading ? (
+            <p className="text-muted-foreground text-sm">Loading jurisdictions…</p>
           ) : (
-            <p className="text-muted-foreground text-sm">Load countries from /api/glossary?action=countries</p>
+            <p className="text-muted-foreground text-sm">Unable to load countries from glossary API</p>
           )}
         </CardContent>
       </Card>

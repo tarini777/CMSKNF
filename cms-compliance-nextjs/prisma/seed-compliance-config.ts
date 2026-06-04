@@ -1,39 +1,7 @@
 import type { PrismaClient } from '@prisma/client'
+import { syncJurisdictionRulesFromFrameworks } from '../src/lib/jurisdiction-seed-service'
 
 const EFFECTIVE = '2025-01-01'
-
-const JURISDICTION_RULES = [
-  {
-    jurisdictionCode: 'US',
-    jurisdictionName: 'United States — CMS Open Payments',
-    perPaymentMin: 10,
-    aggregateAnnualMin: 100,
-    currency: 'USD',
-    fmvTolerancePercent: 10,
-    regulatoryBasis: '42 CFR 403.904 — $10 per payment / $100 annual aggregate',
-    effectiveDate: EFFECTIVE,
-  },
-  {
-    jurisdictionCode: 'FR',
-    jurisdictionName: 'France — Loi Bertrand',
-    perPaymentMin: 10,
-    aggregateAnnualMin: 0,
-    currency: 'EUR',
-    fmvTolerancePercent: 10,
-    regulatoryBasis: 'Loi Bertrand — benefits ≥ €10',
-    effectiveDate: EFFECTIVE,
-  },
-  {
-    jurisdictionCode: 'UK',
-    jurisdictionName: 'United Kingdom — EFPIA / Disclosure UK',
-    perPaymentMin: 0,
-    aggregateAnnualMin: 0,
-    currency: 'GBP',
-    fmvTolerancePercent: 10,
-    regulatoryBasis: 'EFPIA Disclosure Code; ABPI Disclosure UK',
-    effectiveDate: EFFECTIVE,
-  },
-]
 
 const FMV_SPECIALTY_TIERS = [
   { tierKey: 'default', multiplier: 1, displayLabel: 'Default' },
@@ -67,14 +35,13 @@ const FMV_RATES = [
 ]
 
 export async function seedComplianceConfig(prisma: PrismaClient): Promise<void> {
-  const existing = await prisma.jurisdictionRule.count()
-  if (existing > 0) {
-    console.log(`Compliance config already seeded (${existing} jurisdiction rules) — skipping`)
-    return
-  }
+  const jurisdictionCount = await syncJurisdictionRulesFromFrameworks(prisma)
+  console.log(`Jurisdiction rules synced: ${jurisdictionCount} national regimes`)
 
-  for (const rule of JURISDICTION_RULES) {
-    await prisma.jurisdictionRule.create({ data: { ...rule, isActive: true } })
+  const fmvExisting = await prisma.fmvSpecialtyTier.count()
+  if (fmvExisting > 0) {
+    console.log(`FMV config already seeded (${fmvExisting} specialty tiers) — skipping FMV rates`)
+    return
   }
 
   for (const tier of FMV_SPECIALTY_TIERS) {
@@ -94,6 +61,6 @@ export async function seedComplianceConfig(prisma: PrismaClient): Promise<void> 
   }
 
   console.log(
-    `Compliance config seeded: ${JURISDICTION_RULES.length} jurisdictions, ${FMV_RATES.length} FMV rates, ${FMV_SPECIALTY_TIERS.length} specialty tiers`
+    `Compliance config seeded: ${jurisdictionCount} jurisdictions, ${FMV_RATES.length} FMV rates, ${FMV_SPECIALTY_TIERS.length} specialty tiers`
   )
 }

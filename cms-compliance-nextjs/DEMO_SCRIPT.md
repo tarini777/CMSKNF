@@ -10,14 +10,18 @@ Run after `npm run dev` and `npx prisma db seed` (or fresh DB).
 ## Before you start
 
 ```bash
+cd /Users/tarini/CMSKNF
+docker compose up postgres -d
+
 cd cms-compliance-nextjs
-npm install
-docker compose up postgres -d   # or use existing PostgreSQL
-cp .env.example .env.local      # set DATABASE_URL
 npx prisma migrate deploy
 npx prisma db seed
 npm run dev
 ```
+
+Open http://localhost:3000
+
+> **Note:** Run each line separately. Do not paste inline `# comments` — shells and npm treat `#` as part of the command.
 
 **Demo logins** (optional — auth is off by default):
 
